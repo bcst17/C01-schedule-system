@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中彰一區 班表查詢系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS for Excel Parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8fafc;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Hide scrollbar for tabs but allow scroll */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .toast-enter { transform: translateY(100%); opacity: 0; }
+        .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 300ms ease-out; }
+        .toast-exit { transform: translateY(0); opacity: 1; }
+        .toast-exit-active { transform: translateY(100%); opacity: 0; transition: all 300ms ease-in; }
+    </style>
+</head>
+<body class="text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white border-b border-slate-200 shadow-sm z-20 flex-none">
+        <div class="flex items-center justify-between px-4 sm:px-6 h-14 max-w-7xl mx-auto">
+            <div class="flex items-center">
+                <i class="fa-solid fa-calendar-days text-brand-500 text-xl mr-3"></i>
+                <h1 class="text-lg font-bold tracking-wider text-slate-800">中彰一區 排班系統</h1>
+            </div>
+            <button onclick="window.switchView('upload')" class="text-slate-400 hover:text-brand-600 focus:outline-none transition-colors p-2 rounded-full hover:bg-slate-50" title="系統設定與資料上傳">
+                <i class="fa-solid fa-gear text-xl"></i>
+            </button>
+        </div>
+        <!-- Tabs (Button Style) -->
+        <div class="flex px-4 sm:px-6 py-2.5 max-w-7xl mx-auto border-t border-slate-100 bg-white">
+            <div class="flex bg-slate-100/80 p-1 rounded-lg space-x-1 w-full sm:w-auto">
+                <button onclick="window.switchView('daily')" id="nav-daily" class="flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all shadow-sm bg-white text-brand-600 border border-slate-200/60">每日值班總覽</button>
+                <button onclick="window.switchView('store')" id="nav-store" class="flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent">門市區間班表</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 p-3 sm:p-6 relative">
+        
+        <!-- VIEW: Daily Overview -->
+        <div id="view-daily" class="view-section max-w-7xl mx-auto space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-100">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">每日值班總覽</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">查看中彰一區各門市當日值班同仁</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="daily-date" class="text-sm font-medium text-slate-600 shrink-0"><i class="fa-regular fa-calendar mr-1"></i>日期:</label>
+                    <input type="date" id="daily-date" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none w-full sm:w-auto" onchange="window.renderDailyView()">
+                </div>
+            </div>
+
+            <!-- Grid: 2 cols on mobile, 3 on tablet/desktop -->
+            <div id="daily-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                <!-- Cards will be injected here -->
+            </div>
+        </div>
+
+        <!-- VIEW: Store Schedule (Multi-select) -->
+        <div id="view-store" class="view-section hidden max-w-full mx-auto space-y-4">
+            <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col gap-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">門市區間班表</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">可同時勾選多家門市進行跨店班表檢視</p>
+                    </div>
+                    <div class="flex items-center">
+                        <select id="store-month-view" class="border border-slate-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-64" onchange="window.renderStoreView()">
+                            <option value="">-- 請先上傳資料 --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Multi-select Store Pills -->
+                <div>
+                    <div class="text-xs font-semibold text-slate-500 mb-2">選擇要檢視的門市：</div>
+                    <div class="flex flex-wrap gap-2" id="store-checkbox-container">
+                        <button onclick="window.toggleAllStores()" id="btn-select-all" class="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors bg-white border-slate-300 text-slate-600 hover:bg-slate-50">全選 / 全不選</button>
+                        <!-- Checkboxes injected by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tables Container -->
+            <div id="store-tables-container" class="space-y-6">
+                <!-- Single Unified Table injected here -->
+            </div>
+            
+            <div id="store-empty-state" class="py-16 text-center text-slate-500 hidden bg-white rounded-xl border border-slate-100 shadow-sm">
+                <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-300"></i>
+                <p>請勾選門市，或該區間尚無班表資料</p>
+            </div>
+        </div>
+
+        <!-- VIEW: Upload & Settings -->
+        <div id="view-upload" class="view-section hidden max-w-4xl mx-auto space-y-4 pb-10">
+            <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-gear text-slate-400 mr-2"></i>系統設定與資料上傳</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">資料會自動同步至雲端，供中彰一區所有門市即時查看</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-xs font-medium text-emerald-600" id="cloud-status">雲端已連線</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                <!-- Upload Schedule -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <div class="flex items-center mb-4">
+                        <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center mr-3">
+                            <i class="fa-solid fa-file-excel"></i>
+                        </div>
+                        <h3 class="text-md font-bold text-slate-800">上傳排班表 (.xlsx)</h3>
+                    </div>
+
+                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 hover:border-brand-300 transition-colors cursor-pointer" onclick="document.getElementById('schedule-file').click()">
+                        <i class="fa-solid fa-cloud-arrow-up text-4xl text-brand-400 mb-3"></i>
+                        <p class="text-sm font-medium text-slate-700">點擊此處選擇檔案</p>
+                    </div>
+                    <input type="file" id="schedule-file" accept=".xlsx, .xls" class="hidden" onchange="window.handleScheduleUpload(event)">
+                </div>
+            </div>
+
+            <!-- Database Status -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
+                <h3 class="text-md font-bold text-slate-800 mb-3"><i class="fa-solid fa-server text-slate-400 mr-2"></i>雲端資料狀態</h3>
+                <div class="overflow-x-auto rounded-lg border border-slate-100">
+                    <table class="w-full text-sm text-left" id="status-table">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-2">門市名稱</th>
+                                <th class="px-4 py-2">雲端已存區間</th>
+                                <th class="px-4 py-2 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100" id="status-table-body">
+                            <!-- Status injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <script type="module">
+        // --- Firebase Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Core Data ---
+        const STORE_LIST = [
+            { id: 'N042', name: '豐原門市' },
+            { id: 'N043', name: '大里門市' },
+            { id: 'N045', name: '台中崇德門市' },
+            { id: 'N047', name: '彰化門市' },
+            { id: 'N049', name: '員林門市' },
+            { id: 'N400', name: '台中向上門市' },
+            { id: 'N401', name: '草屯門市' },
+            { id: 'N402', name: '台中逢甲門市' },
+            { id: 'N404', name: '台中大雅門市' },
+            { id: 'N405', name: '台中沙鹿門市' },
+            { id: 'N407', name: '台中潭子門市' }
+        ];
+
+        const SHIFT_LOGIC = {
+            "A": "早班", "B": "中班", "C": "晚班", "D": "大夜班",
+            "S03": "標準班(S03)", "W0001": "上班",
+            "M0002": "休假", "M0003": "休息日", "M0004": "例假日", "H": "國定假日",
+            "休": "休假", "OFF": "休假", "O": "休假",
+            "事": "事假", "病": "病假", "特": "特休", "公": "公假", "喪": "喪假", "婚": "婚假", "產": "產假"
+        };
+
+        // --- State ---
+        window.appState = { schedules: {} };
+        let currentView = 'daily';
+        let selectedStores = [];
+
+        // --- Firebase Setup ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        let db, auth;
+
+        // --- Initialize Environment ---
+        window.initApp = async function() {
+            initUI();
+            
+            // Setup Firebase if config available
+            if (firebaseConfig) {
+                try {
+                    const app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                    
+                    // Auth First
+                    if (typeof __initial_auth_token !== 'undefined') {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    
+                    // Listen to Cloud Data
+                    listenToCloudData();
+                } catch (e) {
+                    console.error("Firebase init error:", e);
+                    document.getElementById('cloud-status').innerText = '僅本機模式';
+                    document.getElementById('cloud-status').classList.replace('text-emerald-600', 'text-amber-600');
+                    loadDataFromLocal(); 
+                }
+            } else {
+                document.getElementById('cloud-status').innerText = '僅本機模式';
+                document.getElementById('cloud-status').classList.replace('text-emerald-600', 'text-amber-600');
+                loadDataFromLocal();
+            }
+        };
+
+        function listenToCloudData() {
+            if (!auth || !auth.currentUser) return;
+            const schedulesRef = collection(db, 'artifacts', appId, 'public', 'data', 'schedules');
+            
+            // onSnapshot with error handler
+            onSnapshot(schedulesRef, (snapshot) => {
+                let newData = {};
+                snapshot.forEach(doc => {
+                    newData[doc.id] = doc.data().data;
+                });
+                window.appState.schedules = newData;
+                refreshUI();
+            }, (error) => {
+                console.error("Firestore sync error:", error);
+            });
+        }
+
+        async function saveStoreToCloud(storeId) {
+            // Also save locally as backup
+            localStorage.setItem('schedules', JSON.stringify(window.appState.schedules));
+            
+            if (!auth || !auth.currentUser) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'schedules', storeId);
+                await setDoc(docRef, { data: window.appState.schedules[storeId] });
+            } catch (e) {
+                console.error("Cloud save failed:", e);
+                showToast("雲端同步失敗，已儲存於本機", "error");
+            }
+        }
+
+        async function deleteStoreFromCloud(storeId) {
+            if (window.appState.schedules[storeId]) {
+                delete window.appState.schedules[storeId];
+                localStorage.setItem('schedules', JSON.stringify(window.appState.schedules));
+                
+                if (auth && auth.currentUser) {
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'schedules', storeId);
+                        await deleteDoc(docRef);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+                refreshUI();
+                showToast(`已清除門市資料`);
+            }
+        }
+        window.deleteStoreData = deleteStoreFromCloud; // Expose
+
+        function loadDataFromLocal() {
+            try {
+                const stored = localStorage.getItem('schedules');
+                if (stored) {
+                    window.appState.schedules = JSON.parse(stored);
+                    refreshUI();
+                }
+            } catch (e) {}
+        }
+
+        // --- UI Navigation and General Logic ---
+        function initUI() {
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            document.getElementById('daily-date').value = `${y}-${m}-${d}`;
+
+            // Generate Store Checkboxes
+            const checkboxContainer = document.getElementById('store-checkbox-container');
+            STORE_LIST.forEach(store => {
+                const short = getShortStoreName(store);
+                const html = `
+                    <label class="inline-flex items-center cursor-pointer border border-slate-200 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-full text-xs font-medium transition-colors store-pill" data-id="${store.id}">
+                        <input type="checkbox" class="hidden store-checkbox" value="${store.id}" onchange="window.toggleStoreSelection()">
+                        <span class="text-slate-700">${short}</span>
+                    </label>
+                `;
+                checkboxContainer.insertAdjacentHTML('beforeend', html);
+            });
+
+            window.switchView('daily');
+        }
+
+        function refreshUI() {
+            updatePeriodDropdown();
+            if (currentView === 'daily') window.renderDailyView();
+            if (currentView === 'store') window.renderStoreView();
+            if (currentView === 'upload') updateStatusUI();
+        }
+
+        window.switchView = function(viewId) {
+            currentView = viewId;
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            
+            // Reset nav buttons
+            const navDaily = document.getElementById('nav-daily');
+            const navStore = document.getElementById('nav-store');
+            if (navDaily && navStore) {
+                navDaily.className = "flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent";
+                navStore.className = "flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent";
+                
+                const activeNav = document.getElementById(`nav-${viewId}`);
+                if(activeNav) activeNav.className = "flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all shadow-sm bg-white text-brand-600 border border-slate-200/60";
+            }
+
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            
+            refreshUI();
+        };
+
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const icon = type === 'success' ? '<i class="fa-solid fa-circle-check text-green-500"></i>' : 
+                         type === 'error' ? '<i class="fa-solid fa-circle-exclamation text-red-500"></i>' : 
+                         '<i class="fa-solid fa-circle-info text-blue-500"></i>';
+            const bgColor = type === 'error' ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200';
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border ${bgColor} transform transition-all duration-300 translate-y-10 opacity-0`;
+            toast.innerHTML = `${icon} <span class="text-sm font-medium text-slate-700">${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        // --- Parsing Engine Helpers ---
+        function getShortStoreName(store) {
+            let shortName = store.name.replace('門市', '');
+            if (shortName.startsWith('台中')) shortName = shortName.replace('台中', '');
+            return shortName;
+        }
+
+        // 強化的跨店辨識器 (解決台中大雅與大雅的不對稱問題)
+        function findCrossStore(text, currentStoreId) {
+            if (!text) return null;
+            for (const store of STORE_LIST) {
+                if (store.id === currentStoreId) continue;
+                // 用三個層級來捕捉：全名(台中大雅門市)、去門市(台中大雅)、去台中(大雅)
+                const name1 = store.name;                           
+                const name2 = store.name.replace('門市', '');         
+                const name3 = getShortStoreName(store);             
+                
+                if (text.includes(name1) || text.includes(name2) || text.includes(name3)) {
+                    return store;
+                }
+            }
+            return null;
+        }
+
+        function autoDetectStore(filename) {
+            if (!filename) return null;
+            for (const store of STORE_LIST) {
+                const shortName = getShortStoreName(store); // 如: 大雅、崇德
+                if (filename.includes(store.name) || filename.includes(store.id) || 
+                    filename.includes(store.name.replace('門市', '')) || filename.includes(shortName)) {
+                    return store.id;
+                }
+            }
+            return null;
+        }
+
+        function getDatesInRange(startStr, endStr) {
+            const dates = [];
+            const [sYear, sMonth, sDay] = startStr.split('-').map(Number);
+            const [eYear, eMonth, eDay] = endStr.split('-').map(Number);
+            let currentDate = new Date(sYear, sMonth - 1, sDay);
+            const endDate = new Date(eYear, eMonth - 1, eDay);
+            while (currentDate <= endDate) {
+                dates.push(new Date(currentDate));
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            return dates;
+        }
+
+        async function mergeSchedule(storeId, period, newEmployees, isInjected = false) {
+            if (!window.appState.schedules[storeId]) window.appState.schedules[storeId] = {};
+            if (!window.appState.schedules[storeId][period]) {
+                window.appState.schedules[storeId][period] = [];
+            }
+            const existing = window.appState.schedules[storeId][period];
+            
+            newEmployees.forEach(newEmp => {
+                const exEmp = existing.find(e => e.name === newEmp.name);
+                if (exEmp) {
+                    for (const [date, newCode] of Object.entries(newEmp.shifts)) {
+                        // 如果是被動匯入的休假，不覆蓋原有的支援紀錄
+                        if (!isInjected && (exEmp.shifts[date] === 'CROSS_IN' || exEmp.shifts[date] === 'CROSS_IN_OT') && (newCode === '休' || !newCode)) {
+                            continue;
+                        }
+                        exEmp.shifts[date] = newCode;
+                    }
+                } else {
+                    existing.push({ name: newEmp.name, shifts: { ...newEmp.shifts } });
+                }
+            });
+            await saveStoreToCloud(storeId);
+        }
+
+        // --- File Upload & Excel Parsing logic ---
+        window.handleScheduleUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const fileStoreId = autoDetectStore(file.name);
+            const reader = new FileReader();
+
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd'});
+                    
+                    let importedStores = [];
+                    let totalEmployees = 0;
+                    let crossStoreShiftsMap = {};
+
+                    // Read each sheet
+                    for (const sheetName of workbook.SheetNames) {
+                        const worksheet = workbook.Sheets[sheetName];
+                        const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1, raw: false, dateNF: 'yyyy-mm-dd', defval: ""});
+                        if (rows.length === 0) continue;
+
+                        let currentStoreId = autoDetectStore(sheetName) || fileStoreId;
+                        if (!currentStoreId) continue; // 找不到對應門市就跳過該分頁
+
+                        let isVerticalFormat = false;
+                        let nameCol = -1, dateCol = -1, statusCol = -1, shiftCol = -1, noteCol = -1;
+                        let headerRowIdx = -1;
+
+                        // 1. Detect format
+                        for (let i = 0; i < Math.min(rows.length, 10); i++) {
+                            const rowStr = rows[i].join('').toLowerCase();
+                            if (rowStr.includes('姓名') && rowStr.includes('日期')) {
+                                const hasDateTextHeader = rows[i].some(cell => String(cell).includes('日期'));
+                                if (hasDateTextHeader) {
+                                    isVerticalFormat = true;
+                                    headerRowIdx = i;
+                                    rows[i].forEach((cell, idx) => {
+                                        const val = String(cell).trim();
+                                        if (val.includes('姓名')) nameCol = idx;
+                                        if (val.includes('日期')) dateCol = idx;
+                                        if (val.includes('狀態代碼')) statusCol = idx;
+                                        if (val.includes('班次代碼')) shiftCol = idx;
+                                        if (val === '備註' || val.includes('備註')) noteCol = idx;
+                                    });
+                                    if (noteCol === -1 && shiftCol !== -1 && rows[i].length > shiftCol + 1) noteCol = shiftCol + 1;
+                                    break;
+                                }
+                            }
+                        }
+
+                        let employeesData = [];
+                        let targetPeriod = "";
+                        const currentStoreName = getShortStoreName(STORE_LIST.find(s => s.id === currentStoreId));
+
+                        // 2. Parse Vertical Format
+                        if (isVerticalFormat) {
+                            let minDateObj = null, maxDateObj = null;
+                            let tempEmployees = {};
+
+                            for (let i = headerRowIdx + 1; i < rows.length; i++) {
+                                const row = rows[i];
+                                const name = String(row[nameCol] || '').trim();
+                                let dateVal = String(row[dateCol] || '').trim();
+
+                                if (!name || !dateVal || name.includes('統計') || name.includes('總計')) continue;
+
+                                let dObj = new Date(dateVal);
+                                if (isNaN(dObj.getTime())) dObj = new Date(dateVal.replace(/-/g, '/'));
+                                if (isNaN(dObj.getTime())) continue;
+
+                                const y = dObj.getFullYear(), m = String(dObj.getMonth() + 1).padStart(2, '0'), d = String(dObj.getDate()).padStart(2, '0');
+                                const formattedDate = `${y}-${m}-${d}`;
+
+                                if (!minDateObj || dObj < minDateObj) minDateObj = new Date(dObj);
+                                if (!maxDateObj || dObj > maxDateObj) maxDateObj = new Date(dObj);
+
+                                const status = statusCol !== -1 ? String(row[statusCol]).trim() : '';
+                                const shift = shiftCol !== -1 ? String(row[shiftCol]).trim() : '';
+                                const note = noteCol !== -1 ? String(row[noteCol]).trim() : '';
+
+                                let finalCode = '';
+                                let targetCrossStore = null;
+                                let isOT = false;
+
+                                const crossCheckText = (note + " " + shift).toUpperCase();
+                                isOT = crossCheckText.includes('加班');
+                                const crossStore = findCrossStore(crossCheckText, currentStoreId);
+                                
+                                if (crossStore) {
+                                    targetCrossStore = crossStore;
+                                    const shortName = getShortStoreName(targetCrossStore);
+                                    finalCode = isOT ? `OT_OUT:${shortName}` : `OUT:${shortName}`;
+                                } else if (isOT || note.includes(currentStoreName + '加班')) {
+                                    finalCode = 'OVERTIME';
+                                } else if (note) {
+                                    finalCode = note;
+                                }
+
+                                if (!finalCode) {
+                                    if (shift.toUpperCase().startsWith('S') || shift === 'W0001') finalCode = 'WORK';
+                                    else if (shift) finalCode = shift; 
+                                }
+
+                                if (!finalCode) {
+                                    if (['M0002', 'M0003', 'M0004', '休假', '休息日', '例假日'].includes(status)) finalCode = '休';
+                                    else if (status === 'W0001') finalCode = 'WORK';
+                                    else finalCode = status;
+                                }
+
+                                if (['M0002', 'M0003', 'M0004', '休假', '休息日', '例假日', '休', 'OFF', 'O'].includes(finalCode)) finalCode = '休'; 
+
+                                if (!tempEmployees[name]) tempEmployees[name] = { shifts: {} };
+                                if (finalCode) tempEmployees[name].shifts[formattedDate] = finalCode;
+
+                                if (targetCrossStore) {
+                                    if (!crossStoreShiftsMap[targetCrossStore.id]) crossStoreShiftsMap[targetCrossStore.id] = {};
+                                    if (!crossStoreShiftsMap[targetCrossStore.id][name]) crossStoreShiftsMap[targetCrossStore.id][name] = { shifts: {} };
+                                    crossStoreShiftsMap[targetCrossStore.id][name].shifts[formattedDate] = isOT ? 'CROSS_IN_OT' : 'CROSS_IN';
+                                }
+                            }
+                            if (Object.keys(tempEmployees).length === 0) continue;
+
+                            targetPeriod = `${minDateObj.getFullYear()}-${String(minDateObj.getMonth()+1).padStart(2,'0')}-${String(minDateObj.getDate()).padStart(2,'0')} ~ ${maxDateObj.getFullYear()}-${String(maxDateObj.getMonth()+1).padStart(2,'0')}-${String(maxDateObj.getDate()).padStart(2,'0')}`;
+                            for (const [empName, data] of Object.entries(tempEmployees)) employeesData.push({ name: empName, shifts: data.shifts });
+
+                        } else {
+                            // 3. Parse Horizontal Format
+                            let dateColumnMap = {}, nameColumnIndex = -1, datesFound = [];
+                            const dateRegex = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/;
+
+                            for (let i = 0; i < Math.min(rows.length, 20); i++) {
+                                let tempMap = {}, tempDates = [], tempNameIdx = -1;
+                                rows[i].forEach((cell, colIdx) => {
+                                    const val = String(cell).trim();
+                                    if (val.includes('姓名') || val.includes('員工')) tempNameIdx = colIdx;
+                                    
+                                    const match = val.match(dateRegex);
+                                    if (match) {
+                                        const y = match[1], m = match[2].padStart(2, '0'), d = match[3].padStart(2, '0');
+                                        const normalizedDate = `${y}-${m}-${d}`;
+                                        if (!tempMap[normalizedDate]) { tempMap[normalizedDate] = colIdx; tempDates.push(normalizedDate); }
+                                    } else if (!isNaN(Date.parse(val)) && val.length > 5 && (val.includes('-') || val.includes('/'))) {
+                                        try {
+                                            const dObj = new Date(val);
+                                            if (!isNaN(dObj.getTime()) && dObj.getFullYear() > 2000) {
+                                                const normalizedDate = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}`;
+                                                if (!tempMap[normalizedDate]) { tempMap[normalizedDate] = colIdx; tempDates.push(normalizedDate); }
+                                            }
+                                        } catch(err) {}
+                                    }
+                                });
+                                if (tempDates.length >= 5) {
+                                    headerRowIdx = i; nameColumnIndex = tempNameIdx; dateColumnMap = tempMap; datesFound = tempDates; break;
+                                }
+                            }
+
+                            if (headerRowIdx === -1) continue;
+                            if (nameColumnIndex === -1) nameColumnIndex = 0; 
+                            datesFound.sort();
+                            const startStr = datesFound[0], endStr = datesFound[datesFound.length - 1];
+                            targetPeriod = `${startStr} ~ ${endStr}`;
+                            const datesInRange = getDatesInRange(startStr, endStr);
+
+                            for (let i = headerRowIdx + 1; i < rows.length; i++) {
+                                const row = rows[i];
+                                const empName = String(row[nameColumnIndex] || "").trim();
+                                if (!empName || empName.includes("統計") || empName.includes("總計") || empName.includes("備註")) continue;
+
+                                let shifts = {}, hasAnyShift = false;
+                                datesInRange.forEach(d => {
+                                    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                                    const colIdx = dateColumnMap[dateStr];
+                                    if (colIdx !== undefined) {
+                                        let code = String(row[colIdx] || "").trim();
+                                        if (code) {
+                                            let finalCode = code, targetCrossStore = null;
+                                            const isOT = code.includes('加班');
+                                            const crossStore = findCrossStore(code, currentStoreId);
+                                            
+                                            if (crossStore) {
+                                                targetCrossStore = crossStore;
+                                                const shortName = getShortStoreName(targetCrossStore);
+                                                finalCode = isOT ? `OT_OUT:${shortName}` : `OUT:${shortName}`;
+                                            } else if (isOT || code.includes(currentStoreName + '加班')) {
+                                                finalCode = 'OVERTIME';
+                                            } else if (code.toUpperCase().startsWith('S') || code === 'W0001') {
+                                                finalCode = 'WORK';
+                                            } else if (['M0002', 'M0003', 'M0004', '休假', '休息日', '例假日', '休', 'OFF', 'O'].includes(code)) {
+                                                finalCode = '休';
+                                            }
+                                            shifts[dateStr] = finalCode;
+
+                                            if (targetCrossStore) {
+                                                if (!crossStoreShiftsMap[targetCrossStore.id]) crossStoreShiftsMap[targetCrossStore.id] = {};
+                                                if (!crossStoreShiftsMap[targetCrossStore.id][empName]) crossStoreShiftsMap[targetCrossStore.id][empName] = { shifts: {} };
+                                                crossStoreShiftsMap[targetCrossStore.id][empName].shifts[dateStr] = isOT ? 'CROSS_IN_OT' : 'CROSS_IN';
+                                            }
+                                            hasAnyShift = true;
+                                        }
+                                    }
+                                });
+                                if (hasAnyShift) employeesData.push({ name: empName, shifts: shifts });
+                            }
+                        }
+
+                        // Write local and queue cloud save
+                        if (employeesData.length > 0) {
+                            await mergeSchedule(currentStoreId, targetPeriod, employeesData, false);
+                            
+                            // Process cross store shifts
+                            for (const [otherStoreId, empsObj] of Object.entries(crossStoreShiftsMap)) {
+                                const crossEmpsArray = Object.keys(empsObj).map(empName => ({
+                                    name: empName, shifts: empsObj[empName].shifts
+                                }));
+                                await mergeSchedule(otherStoreId, targetPeriod, crossEmpsArray, true);
+                            }
+                            
+                            const parsedStoreObj = STORE_LIST.find(s => s.id === currentStoreId);
+                            if (parsedStoreObj && !importedStores.includes(parsedStoreObj.name)) importedStores.push(parsedStoreObj.name);
+                            totalEmployees += employeesData.length;
+                        }
+                    } // end sheets loop
+
+                    if (importedStores.length > 0) {
+                        showToast(`成功匯入 ${importedStores.join(', ')} 班表，共計 ${totalEmployees} 人`);
+                        refreshUI();
+                        window.switchView('daily');
+                    } else {
+                        showToast("找不到可辨識的門市分頁名稱！請確認分頁包含門市名稱 (如: 崇德, 大雅)", "error");
+                    }
+                    event.target.value = '';
+                } catch (error) {
+                    console.error(error);
+                    showToast("檔案解析發生錯誤", "error");
+                    event.target.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        // --- UI Render Logic ---
+        function updateStatusUI() {
+            const tbody = document.getElementById('status-table-body');
+            tbody.innerHTML = '';
+            STORE_LIST.forEach(store => {
+                const storeData = window.appState.schedules[store.id];
+                const periods = storeData ? Object.keys(storeData).sort().reverse() : [];
+                
+                let badgesHTML = periods.length > 0 
+                    ? periods.map(p => `<span class="inline-block bg-brand-50 border border-brand-100 text-brand-700 text-xs px-2 py-1 rounded mr-1 mb-1">${p}</span>`).join('')
+                    : '<span class="text-xs text-slate-400">尚無資料</span>';
+
+                let deleteBtnHTML = periods.length > 0 
+                    ? `<button onclick="window.deleteStoreData('${store.id}')" class="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"><i class="fa-solid fa-trash mr-1"></i>清除</button>`
+                    : `<span class="text-xs text-slate-300">-</span>`;
+
+                const tr = `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3 font-medium text-slate-700">${store.id} ${store.name}</td>
+                        <td class="px-4 py-3">${badgesHTML}</td>
+                        <td class="px-4 py-3 text-right">${deleteBtnHTML}</td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', tr);
+            });
+        }
+
+        window.renderDailyView = function() {
+            const dateStr = document.getElementById('daily-date').value;
+            if (!dateStr) return;
+            const grid = document.getElementById('daily-grid');
+            grid.innerHTML = '';
+            let storesFound = 0;
+
+            STORE_LIST.forEach(store => {
+                const storeData = window.appState.schedules[store.id];
+                let targetStoreSchedule = null;
+                
+                if (storeData) {
+                    for (const period in storeData) {
+                        const [start, end] = period.split(' ~ ');
+                        if (dateStr >= start && dateStr <= end) {
+                            targetStoreSchedule = storeData[period];
+                            break;
+                        }
+                    }
+                }
+                
+                if (targetStoreSchedule) {
+                    storesFound++;
+                    let workingHtml = '';
+                    let offHtml = '';
+                    let workingCount = 0;
+
+                    targetStoreSchedule.forEach(emp => {
+                        const shiftCode = emp.shifts[dateStr] || '';
+                        const logicDesc = SHIFT_LOGIC[shiftCode] || '';
+                        const isOff = shiftCode === '休' || shiftCode.toUpperCase() === 'OFF' || shiftCode.includes('休') || logicDesc.includes('休');
+                        let badgeHtml = '';
+                        
+                        if (shiftCode) {
+                            if (isOff) {
+                                offHtml += `<div class="flex justify-between items-center py-1 text-xs text-slate-400">
+                                    <span>${emp.name}</span><span class="border border-slate-200 px-1 rounded bg-slate-50">休假</span>
+                                </div>`;
+                            } else {
+                                workingCount++;
+                                if (shiftCode === 'WORK') {
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></div><span class="text-xs bg-blue-50 text-blue-700 px-1.5 rounded">上班</span></div>`;
+                                } else if (shiftCode === 'OVERTIME') {
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 rounded border border-orange-100">加班</span></div>`;
+                                } else if (shiftCode === 'CROSS_IN') {
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></div><span class="text-xs bg-emerald-50 text-emerald-700 px-1.5 rounded border border-emerald-100">支援</span></div>`;
+                                } else if (shiftCode === 'CROSS_IN_OT') {
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 rounded border border-orange-100">支援(加班)</span></div>`;
+                                } else if (shiftCode.startsWith('OT_OUT:')) {
+                                    const storeName = shiftCode.split(':')[1];
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 rounded border border-orange-100">${storeName}</span></div>`;
+                                } else if (shiftCode.startsWith('OUT:')) {
+                                    const storeName = shiftCode.split(':')[1];
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></div><span class="text-xs bg-emerald-50 text-emerald-700 px-1.5 rounded border border-emerald-100">${storeName}</span></div>`;
+                                } else {
+                                    // 外站判定
+                                    const isExternal = !SHIFT_LOGIC[shiftCode] && !STORE_LIST.some(s => s.name.includes(shiftCode) || getShortStoreName(s).includes(shiftCode));
+                                    badgeHtml = `<span class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100 truncate max-w-[80px]">${shiftCode} ${isExternal ? '<span class="opacity-70">外站</span>' : ''}</span>`;
+                                }
+
+                                workingHtml += `
+                                <div class="flex justify-between items-center py-2 border-b border-slate-50 last:border-0 group">
+                                    <span class="font-bold text-sm text-slate-700 truncate mr-2">${emp.name}</span>
+                                    <div class="flex items-center whitespace-nowrap">${badgeHtml}</div>
+                                </div>`;
+                            }
+                        }
+                    });
+
+                    const shortTitle = getShortStoreName(store);
+                    const card = `
+                    <div class="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-slate-200 flex flex-col h-full hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+                            <h3 class="font-bold text-base text-slate-800">${shortTitle}</h3>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold shadow-inner">${workingCount} 人</span>
+                        </div>
+                        <div class="space-y-0.5 flex-1 overflow-y-auto min-h-[60px]">
+                            ${workingHtml || '<div class="text-xs text-slate-400 py-3 text-center">無排班資料</div>'}
+                        </div>
+                        ${offHtml ? `<div class="mt-2 pt-2 border-t border-dashed border-slate-200">${offHtml}</div>` : ''}
+                    </div>
+                    `;
+                    grid.insertAdjacentHTML('beforeend', card);
+                }
+            });
+
+            if (storesFound === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-500 bg-white rounded-xl border border-slate-100 shadow-sm">
+                        <i class="fa-regular fa-calendar-xmark text-4xl mb-3 text-slate-300"></i>
+                        <p class="text-base font-medium">尚未有 ${dateStr} 的排班資料</p>
+                    </div>
+                `;
+            }
+        };
+
+        function updatePeriodDropdown() {
+            const periodSelect = document.getElementById('store-month-view');
+            const currentVal = periodSelect.value;
+            
+            const allPeriods = new Set();
+            for (const storeId in window.appState.schedules) {
+                for (const period in window.appState.schedules[storeId]) {
+                    allPeriods.add(period);
+                }
+            }
+            
+            const sortedPeriods = Array.from(allPeriods).sort().reverse();
+            periodSelect.innerHTML = sortedPeriods.length ? '' : '<option value="">-- 無資料 --</option>';
+            
+            sortedPeriods.forEach(p => {
+                periodSelect.insertAdjacentHTML('beforeend', `<option value="${p}">${p}</option>`);
+            });
+            
+            if (sortedPeriods.includes(currentVal)) {
+                periodSelect.value = currentVal;
+            } else if (sortedPeriods.length > 0) {
+                periodSelect.value = sortedPeriods[0];
+            }
+        }
+
+        window.toggleStoreSelection = function() {
+            const checkboxes = document.querySelectorAll('.store-checkbox');
+            selectedStores = [];
+            checkboxes.forEach(cb => {
+                const label = cb.closest('.store-pill');
+                if (cb.checked) {
+                    selectedStores.push(cb.value);
+                    label.classList.add('bg-brand-500', 'border-brand-500');
+                    label.classList.remove('bg-white', 'border-slate-200');
+                    label.querySelector('span').classList.add('text-white');
+                    label.querySelector('span').classList.remove('text-slate-700');
+                } else {
+                    label.classList.remove('bg-brand-500', 'border-brand-500');
+                    label.classList.add('bg-white', 'border-slate-200');
+                    label.querySelector('span').classList.remove('text-white');
+                    label.querySelector('span').classList.add('text-slate-700');
+                }
+            });
+            window.renderStoreView();
+        };
+
+        window.toggleAllStores = function() {
+            const checkboxes = document.querySelectorAll('.store-checkbox');
+            const allSelected = selectedStores.length === STORE_LIST.length;
+            
+            checkboxes.forEach(cb => {
+                cb.checked = !allSelected;
+            });
+            window.toggleStoreSelection();
+        };
+
+        window.renderStoreView = function() {
+            const container = document.getElementById('store-tables-container');
+            const emptyState = document.getElementById('store-empty-state');
+            const periodStr = document.getElementById('store-month-view').value;
+            
+            container.innerHTML = '';
+            
+            if (selectedStores.length === 0 || !periodStr) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            const [startStr, endStr] = periodStr.split(' ~ ');
+            const datesInRange = getDatesInRange(startStr, endStr);
+            const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+            
+            const todayObj = new Date();
+            const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth()+1).padStart(2,'0')}-${String(todayObj.getDate()).padStart(2,'0')}`;
+
+            // 表頭：使用 border-separate 以實現一體化光柱
+            let headerHTML = '<th class="px-1 sm:px-2 py-2 font-bold w-[70px] sm:w-[90px] min-w-[70px] sm:min-w-[90px] sticky left-0 bg-slate-100 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-slate-700 text-center border-b-2 border-r border-slate-300">姓名</th>';
+            
+            datesInRange.forEach(d => {
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                const isToday = dateStr === todayStr;
+                
+                const dayOfWeek = d.getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                const textClass = isWeekend ? 'text-red-500 font-bold' : 'text-slate-600';
+                const dateLabel = `${d.getMonth()+1}/${d.getDate()}<br><span class="text-[10px]">(${weekDays[dayOfWeek]})</span>`;
+                
+                if (isToday) {
+                    // 今日表頭：加上頂部與左右邊線，去除底線向下延伸
+                    headerHTML += `<th class="px-1 sm:px-2 py-2 text-center w-[55px] sm:w-[65px] min-w-[55px] sm:min-w-[65px] max-w-[65px] text-amber-900 bg-amber-100 font-bold leading-tight border-t-2 border-x-2 border-b-0 border-amber-400 relative z-10">${dateLabel}</th>`;
+                } else {
+                    headerHTML += `<th class="px-1 sm:px-2 py-2 text-center w-[55px] sm:w-[65px] min-w-[55px] sm:min-w-[65px] max-w-[65px] ${textClass} font-bold leading-tight border-b-2 border-slate-300">${dateLabel}</th>`;
+                }
+            });
+
+            let tablesRendered = 0;
+            let allRowsHTML = '';
+
+            selectedStores.forEach((storeId, storeIndex) => {
+                const storeData = window.appState.schedules[storeId]?.[periodStr];
+                if (!storeData) return; 
+                
+                const shortName = getShortStoreName(STORE_LIST.find(s => s.id === storeId));
+                tablesRendered++;
+                const isLastStore = (storeIndex === selectedStores.length - 1);
+
+                // 門市名稱橫幅列：改為淺色底色，並使用深藍色文字作區隔，字體大小與姓名相同
+                let storeRowHTML = `<td class="px-1 sm:px-2 py-2 font-bold text-brand-700 text-center sticky left-0 bg-slate-50 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-[13px] sm:text-sm border-b border-r border-slate-200">${shortName}</td>`;
+                
+                datesInRange.forEach(d => {
+                    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                    const isToday = dateStr === todayStr;
+                    if (isToday) {
+                        // 今日的空白列：繼承黃色光柱，不畫橫線
+                        storeRowHTML += `<td class="bg-amber-50/80 border-x-2 border-amber-400 border-y-0 p-0 relative z-10"></td>`;
+                    } else {
+                        storeRowHTML += `<td class="bg-slate-50/40 border-b border-slate-200 p-0"></td>`;
+                    }
+                });
+                
+                allRowsHTML += `<tr>${storeRowHTML}</tr>`;
+
+                storeData.forEach((emp, empIndex) => {
+                    // 判斷是否為整個表格的最後一位員工 (用來封底線)
+                    const isLastEmp = isLastStore && (empIndex === storeData.length - 1);
+                    
+                    let cellsHTML = `<td class="px-1 sm:px-2 py-2 font-bold text-slate-800 text-center sticky left-0 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-[13px] sm:text-sm border-b border-r border-slate-100 group-hover/row:bg-slate-50 transition-colors">${emp.name}</td>`;
+                    
+                    datesInRange.forEach(d => {
+                        const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                        const isToday = dateStr === todayStr;
+                        const code = emp.shifts[dateStr] || '';
+                        let desc = SHIFT_LOGIC[code] || '';
+                        
+                        let bgClass = 'hover:bg-slate-100';
+                        let displayContent = `<span class="text-slate-800 font-bold text-[11px] sm:text-xs truncate block w-full px-0.5">${code}</span>`;
+                        
+                        // 外站判定
+                        const isExternal = code && !SHIFT_LOGIC[code] && !STORE_LIST.some(s => s.name.includes(code) || getShortStoreName(s).includes(code)) && !code.includes(':') && code!=='WORK' && code!=='OVERTIME' && code!=='CROSS_IN' && code!=='CROSS_IN_OT' && code!=='休';
+                        let tooltipDesc = isExternal ? `${code} 外站` : desc;
+                        
+                        if (code === '休' || code.toUpperCase() === 'OFF' || code.includes('休')) {
+                            bgClass = 'bg-slate-50 text-slate-400 font-normal';
+                            displayContent = `<span class="text-slate-400 font-normal text-[11px] sm:text-xs">休</span>`;
+                            tooltipDesc = '休假';
+                        } else if (code === 'WORK') {
+                            bgClass = 'hover:bg-slate-200 transition-colors';
+                            displayContent = '<div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-blue-500 mx-auto shadow-sm"></div>';
+                            tooltipDesc = '上班';
+                        } else if (code === 'OVERTIME') {
+                            bgClass = 'bg-orange-50 hover:bg-orange-100 transition-colors';
+                            displayContent = '<div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-orange-500 mx-auto shadow-sm"></div>';
+                            tooltipDesc = '加班';
+                        } else if (code === 'CROSS_IN') {
+                            bgClass = 'bg-emerald-50 hover:bg-emerald-100 transition-colors';
+                            displayContent = '<div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-emerald-500 mx-auto shadow-sm"></div>';
+                            tooltipDesc = '支援';
+                        } else if (code === 'CROSS_IN_OT') {
+                            bgClass = 'bg-orange-50 hover:bg-orange-100 transition-colors';
+                            displayContent = '<div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-orange-500 mx-auto shadow-sm"></div>';
+                            tooltipDesc = '支援(加班)';
+                        } else if (code.startsWith('OT_OUT:')) {
+                            const target = code.split(':')[1];
+                            bgClass = 'bg-orange-50 hover:bg-orange-100 transition-colors';
+                            displayContent = `<span class="text-orange-600 font-bold text-[11px] sm:text-xs truncate block px-0.5 w-full">${target}</span>`;
+                            tooltipDesc = `${target} 支援(加班)`;
+                        } else if (code.startsWith('OUT:')) {
+                            const target = code.split(':')[1];
+                            bgClass = 'bg-emerald-50 hover:bg-emerald-100 transition-colors';
+                            displayContent = `<span class="text-emerald-700 font-bold text-[11px] sm:text-xs truncate block px-0.5 w-full">${target}</span>`;
+                            tooltipDesc = `${target} 支援`;
+                        } else if (code) {
+                            bgClass = 'bg-purple-50 hover:bg-purple-100 transition-colors';
+                            displayContent = `<span class="text-purple-700 font-bold text-[10px] sm:text-xs truncate block px-0.5 w-full">${code}</span>`;
+                        }
+                        
+                        if (isToday) {
+                            // 統一光柱設計：只畫左右邊線，去除上下邊線 (除非是整個表格的最底端)
+                            let bottomBorder = isLastEmp ? 'border-b-2 border-amber-400' : 'border-y-0';
+                            cellsHTML += `
+                                <td class="px-0 py-2 text-center bg-amber-50/80 border-x-2 ${bottomBorder} border-amber-400 relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] z-10">
+                                    <div class="absolute inset-0 hover:bg-amber-100/50 transition-colors z-0"></div>
+                                    <div class="flex items-center justify-center w-full h-full overflow-hidden relative z-10">${displayContent}</div>
+                                    ${code ? `
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50">
+                                        <div class="bg-slate-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
+                                            ${tooltipDesc}
+                                            <svg class="absolute text-slate-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                </td>
+                            `;
+                        } else {
+                            cellsHTML += `
+                                <td class="px-0 py-2 text-center border-b border-slate-100 ${bgClass} relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px]">
+                                    <div class="flex items-center justify-center w-full h-full overflow-hidden">${displayContent}</div>
+                                    ${code ? `
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50">
+                                        <div class="bg-slate-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
+                                            ${tooltipDesc}
+                                            <svg class="absolute text-slate-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                </td>
+                            `;
+                        }
+                    });
+                    allRowsHTML += `<tr class="group/row">${cellsHTML}</tr>`;
+                });
+            });
+
+            if (tablesRendered === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                // 將 table 加入 border-separate 與 border-spacing-0 實現精準劃線控制
+                const finalTableHTML = `
+                <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden pb-px pr-px">
+                    <div class="overflow-x-auto relative">
+                        <table class="w-full text-sm text-left whitespace-nowrap table-fixed border-separate" style="border-spacing: 0;">
+                            <thead class="text-xs text-slate-700 bg-slate-100 uppercase">
+                                <tr>${headerHTML}</tr>
+                            </thead>
+                            <tbody>
+                                ${allRowsHTML}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('beforeend', finalTableHTML);
+            }
+        };
+
+        // Initialize when DOM loads
+        window.addEventListener('DOMContentLoaded', window.initApp);
+
+    </script>
+</body>
+</html>
