@@ -229,38 +229,45 @@
         let selectedStores = [];
 
         // --- Firebase Setup ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const appId = 'tc-schedule-app'; // 固定一個應用程式ID
+        
+        // TODO: 請將下方的 firebaseConfig 內容，替換成您剛剛在 Firebase 後台複製的金鑰！
+        const firebaseConfig = {
+            apiKey: "AIzaSyCbo_ah1vRp757j_P2jRDIcmCLBjjq2lvE",
+  authDomain: "c01-schedule-system.firebaseapp.com",
+  projectId: "c01-schedule-system",
+  storageBucket: "c01-schedule-system.firebasestorage.app",
+  messagingSenderId: "391707792192",
+  appId: "1:391707792192:web:5df5a0824720bb867fa0a5"
+        };
         let db, auth;
 
         // --- Initialize Environment ---
         window.initApp = async function() {
             initUI();
             
-            // Setup Firebase if config available
-            if (firebaseConfig) {
+            if (firebaseConfig.apiKey !== "您的_API_KEY") {
                 try {
                     const app = initializeApp(firebaseConfig);
                     db = getFirestore(app);
                     auth = getAuth(app);
                     
-                    // Auth First
-                    if (typeof __initial_auth_token !== 'undefined') {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    // 進行匿名登入 (取得資料庫讀寫權限)
+                    await signInAnonymously(auth);
                     
-                    // Listen to Cloud Data
+                    // 成功連線後開始監聽雲端資料
                     listenToCloudData();
+                    
+                    document.getElementById('cloud-status').innerText = '雲端已連線';
+                    document.getElementById('cloud-status').classList.replace('text-amber-600', 'text-emerald-600');
                 } catch (e) {
                     console.error("Firebase init error:", e);
-                    document.getElementById('cloud-status').innerText = '僅本機模式';
+                    document.getElementById('cloud-status').innerText = '僅本機模式 (連線失敗)';
                     document.getElementById('cloud-status').classList.replace('text-emerald-600', 'text-amber-600');
                     loadDataFromLocal(); 
                 }
             } else {
-                document.getElementById('cloud-status').innerText = '僅本機模式';
+                document.getElementById('cloud-status').innerText = '請先填寫 Firebase 金鑰';
                 document.getElementById('cloud-status').classList.replace('text-emerald-600', 'text-amber-600');
                 loadDataFromLocal();
             }
