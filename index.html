@@ -81,7 +81,7 @@
                 <h1 class="text-lg font-bold tracking-wider text-brand-800">中彰一區 班表總覽</h1>
             </div>
             <div class="flex items-center gap-3">
-                <span class="text-xs font-bold text-stone-400">v2.5</span>
+                <span class="text-xs font-bold text-stone-400">v2.6</span>
                 <button onclick="window.switchView('upload')" class="text-stone-400 hover:text-brand-700 focus:outline-none transition-colors p-2 rounded-full hover:bg-beige-100" title="系統設定">
                     <i class="fa-solid fa-gear text-xl"></i>
                 </button>
@@ -1439,9 +1439,10 @@
                                     <div class="absolute inset-0 group-hover:bg-amber-100/50 group-focus:bg-amber-100/50 transition-colors z-0"></div>
                                     <div class="flex items-center justify-center w-full h-full overflow-hidden relative z-10">${displayContent}</div>
                                     ${code ? `
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden sm:group-hover:block group-[.active-tooltip]:block z-[60]">
-                                        <div class="bg-brand-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
-                                            ${tooltipDesc}
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden sm:group-hover:block group-[.active-tooltip]:block z-[60]">
+                                        <div class="bg-brand-800 text-white rounded py-1.5 px-2.5 shadow-lg relative font-medium flex flex-col items-center min-w-[70px]">
+                                            <span class="text-[11px] sm:text-xs whitespace-nowrap">${tooltipDesc}</span>
+                                            <span class="text-[10px] text-brand-200/90 whitespace-nowrap font-normal mt-0.5 border-t border-brand-700/50 pt-0.5 w-full text-center">點擊可修改</span>
                                             <svg class="absolute text-brand-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
                                         </div>
                                     </div>
@@ -1457,9 +1458,10 @@
                                     class="schedule-cell px-0 py-2 text-center border-b border-stone-100 ${bgClass} relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] focus:outline-none transition-colors">
                                     <div class="flex items-center justify-center w-full h-full overflow-hidden">${displayContent}</div>
                                     ${code ? `
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden sm:group-hover:block group-[.active-tooltip]:block z-[60]">
-                                        <div class="bg-brand-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
-                                            ${tooltipDesc}
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden sm:group-hover:block group-[.active-tooltip]:block z-[60]">
+                                        <div class="bg-brand-800 text-white rounded py-1.5 px-2.5 shadow-lg relative font-medium flex flex-col items-center min-w-[70px]">
+                                            <span class="text-[11px] sm:text-xs whitespace-nowrap">${tooltipDesc}</span>
+                                            <span class="text-[10px] text-brand-200/90 whitespace-nowrap font-normal mt-0.5 border-t border-brand-700/50 pt-0.5 w-full text-center">點擊可修改</span>
                                             <svg class="absolute text-brand-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
                                         </div>
                                     </div>
