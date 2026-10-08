@@ -1,6 +1,6 @@
 {
-"name": "中彰一區排班系統",
-"short_name": "排班系統",
+"name": "中彰一區 班表總覽",
+"short_name": "中彰一區 班表",
 "start_url": "./",
 "display": "standalone",
 "background_color": "#FDFBF7",
