@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>中彰一區 班表查詢系統</title>
+    <!-- Web App / 加入主畫面設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="排班系統">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
@@ -22,12 +30,22 @@
                     },
                     colors: {
                         brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            900: '#0c4a6e',
+                            50: '#fdf8f6',
+                            100: '#f2e8e5',
+                            200: '#eaddd7',
+                            300: '#e0cec7',
+                            400: '#d2bab0',
+                            500: '#a18072',
+                            600: '#876558',
+                            700: '#694c41',
+                            800: '#523a31',
+                            900: '#402c25',
+                        },
+                        beige: {
+                            DEFAULT: '#FDFBF7',
+                            50: '#fcfaf8',
+                            100: '#f7f3ed',
+                            200: '#ebe1d5'
                         }
                     }
                 }
@@ -36,14 +54,14 @@
     </script>
     <style>
         body {
-            background-color: #f8fafc;
+            background-color: #FDFBF7;
         }
         
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar-thumb { background: #eaddd7; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d2bab0; }
 
         /* Hide scrollbar for tabs but allow scroll */
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -55,41 +73,37 @@
         .toast-exit-active { transform: translateY(100%); opacity: 0; transition: all 300ms ease-in; }
     </style>
 </head>
-<body class="text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
+<body class="text-stone-800 font-sans h-screen flex flex-col overflow-hidden bg-beige">
 
-    <!-- Header & Navigation -->
-    <header class="bg-white border-b border-slate-200 shadow-sm z-20 flex-none">
+    <header class="bg-white border-b border-stone-200 shadow-sm z-20 flex-none">
         <div class="flex items-center justify-between px-4 sm:px-6 h-14 max-w-7xl mx-auto">
             <div class="flex items-center">
-                <i class="fa-solid fa-calendar-days text-brand-500 text-xl mr-3"></i>
-                <h1 class="text-lg font-bold tracking-wider text-slate-800">中彰一區 排班系統</h1>
+                <h1 class="text-lg font-bold tracking-wider text-brand-800">中彰一區 排班系統</h1>
             </div>
-            <button onclick="window.switchView('upload')" class="text-slate-400 hover:text-brand-600 focus:outline-none transition-colors p-2 rounded-full hover:bg-slate-50" title="系統設定與資料上傳">
+            <button onclick="window.switchView('upload')" class="text-stone-400 hover:text-brand-700 focus:outline-none transition-colors p-2 rounded-full hover:bg-beige-100" title="系統設定">
                 <i class="fa-solid fa-gear text-xl"></i>
             </button>
         </div>
         <!-- Tabs (Button Style) -->
-        <div class="flex px-4 sm:px-6 py-2.5 max-w-7xl mx-auto border-t border-slate-100 bg-white">
-            <div class="flex bg-slate-100/80 p-1 rounded-lg space-x-1 w-full sm:w-auto">
-                <button onclick="window.switchView('daily')" id="nav-daily" class="flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all shadow-sm bg-white text-brand-600 border border-slate-200/60">每日值班總覽</button>
-                <button onclick="window.switchView('store')" id="nav-store" class="flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent">門市區間班表</button>
+        <div class="flex px-4 sm:px-6 py-2.5 max-w-7xl mx-auto border-t border-stone-100 bg-white">
+            <div class="flex bg-beige-100 p-1 rounded-lg space-x-1 w-full sm:w-auto">
+                <button onclick="window.switchView('daily')" id="nav-daily" class="flex-1 sm:flex-none px-5 py-1.5 text-sm font-bold rounded-md transition-all shadow-sm bg-white text-brand-700 border border-stone-200/60">每日值班總覽</button>
+                <button onclick="window.switchView('store')" id="nav-store" class="flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all text-stone-500 hover:text-brand-700 hover:bg-white/60 border border-transparent">門市區間班表</button>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto bg-slate-50 p-3 sm:p-6 relative">
+    <main class="flex-1 overflow-y-auto bg-beige p-3 sm:p-6 relative">
         
         <!-- VIEW: Daily Overview -->
         <div id="view-daily" class="view-section max-w-7xl mx-auto space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-100">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-stone-200">
                 <div>
-                    <h2 class="text-xl font-bold text-slate-800">每日值班總覽</h2>
-                    <p class="text-xs text-slate-500 mt-0.5">查看中彰一區各門市當日值班同仁</p>
+                    <h2 class="text-xl font-bold text-brand-800">每日值班總覽</h2>
                 </div>
                 <div class="flex items-center gap-2">
-                    <label for="daily-date" class="text-sm font-medium text-slate-600 shrink-0"><i class="fa-regular fa-calendar mr-1"></i>日期:</label>
-                    <input type="date" id="daily-date" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none w-full sm:w-auto" onchange="window.renderDailyView()">
+                    <label for="daily-date" class="text-sm font-bold text-brand-800 shrink-0">選擇日期</label>
+                    <input type="date" id="daily-date" class="border border-stone-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none w-full sm:w-auto bg-beige text-stone-800 font-medium cursor-pointer" onchange="window.renderDailyView()">
                 </div>
             </div>
 
@@ -99,16 +113,14 @@
             </div>
         </div>
 
-        <!-- VIEW: Store Schedule (Multi-select) -->
         <div id="view-store" class="view-section hidden max-w-full mx-auto space-y-4">
-            <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col gap-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-stone-200 flex flex-col gap-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
                     <div>
-                        <h2 class="text-xl font-bold text-slate-800">門市區間班表</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">可同時勾選多家門市進行跨店班表檢視</p>
+                        <h2 class="text-xl font-bold text-brand-800">門市區間班表</h2>
                     </div>
                     <div class="flex items-center">
-                        <select id="store-month-view" class="border border-slate-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-64" onchange="window.renderStoreView()">
+                        <select id="store-month-view" class="border border-stone-300 bg-beige rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-64 font-medium text-stone-700" onchange="window.renderStoreView()">
                             <option value="">-- 請先上傳資料 --</option>
                         </select>
                     </div>
@@ -116,9 +128,9 @@
                 
                 <!-- Multi-select Store Pills -->
                 <div>
-                    <div class="text-xs font-semibold text-slate-500 mb-2">選擇要檢視的門市：</div>
+                    <div class="text-xs font-bold text-brand-700 mb-3">選擇檢視門市：</div>
                     <div class="flex flex-wrap gap-2" id="store-checkbox-container">
-                        <button onclick="window.toggleAllStores()" id="btn-select-all" class="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors bg-white border-slate-300 text-slate-600 hover:bg-slate-50">全選 / 全不選</button>
+                        <button onclick="window.toggleAllStores()" id="btn-select-all" class="px-4 py-2 rounded-full text-xs font-bold border transition-colors bg-white border-stone-300 text-stone-600 hover:bg-beige-100">全選 / 全不選</button>
                         <!-- Checkboxes injected by JS -->
                     </div>
                 </div>
@@ -129,59 +141,51 @@
                 <!-- Single Unified Table injected here -->
             </div>
             
-            <div id="store-empty-state" class="py-16 text-center text-slate-500 hidden bg-white rounded-xl border border-slate-100 shadow-sm">
-                <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-300"></i>
-                <p>請勾選門市，或該區間尚無班表資料</p>
+            <div id="store-empty-state" class="py-16 text-center text-stone-500 hidden bg-white rounded-xl border border-stone-200 shadow-sm">
+                <p class="text-xl font-bold text-brand-700 mb-2">尚未選擇門市</p>
+                <p class="text-sm font-medium">請勾選上方門市，或該區間尚無班表資料</p>
             </div>
         </div>
 
-        <!-- VIEW: Upload & Settings -->
         <div id="view-upload" class="view-section hidden max-w-4xl mx-auto space-y-4 pb-10">
-            <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+            <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-stone-200 flex items-center justify-between">
                 <div>
-                    <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-gear text-slate-400 mr-2"></i>系統設定與資料上傳</h2>
-                    <p class="text-xs text-slate-500 mt-0.5">資料會自動同步至雲端，供中彰一區所有門市即時查看</p>
+                    <h2 class="text-xl font-bold text-brand-800">系統設定與資料上傳</h2>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="relative flex h-3 w-3">
+                <div class="flex items-center gap-2 px-3 py-1 bg-beige-100 rounded-full border border-stone-200">
+                    <span class="relative flex h-2 w-2">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                    <span class="text-xs font-medium text-emerald-600" id="cloud-status">雲端已連線</span>
+                    <span class="text-[11px] font-bold text-emerald-700" id="cloud-status">雲端已連線</span>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 gap-4">
                 <!-- Upload Schedule -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-                    <div class="flex items-center mb-4">
-                        <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center mr-3">
-                            <i class="fa-solid fa-file-excel"></i>
-                        </div>
-                        <h3 class="text-md font-bold text-slate-800">上傳排班表 (.xlsx)</h3>
-                    </div>
-
-                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 hover:border-brand-300 transition-colors cursor-pointer" onclick="document.getElementById('schedule-file').click()">
-                        <i class="fa-solid fa-cloud-arrow-up text-4xl text-brand-400 mb-3"></i>
-                        <p class="text-sm font-medium text-slate-700">點擊此處選擇檔案</p>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 hover:shadow-md transition-shadow">
+                    <h3 class="text-md font-bold text-brand-800 mb-4">上傳排班表 (.xlsx)</h3>
+                    <div class="border-2 border-dashed border-stone-300 rounded-xl p-8 text-center hover:bg-beige-100 hover:border-brand-400 transition-colors cursor-pointer" onclick="document.getElementById('schedule-file').click()">
+                        <i class="fa-solid fa-cloud-arrow-up text-4xl text-brand-500 mb-3"></i>
+                        <div class="text-brand-600 font-bold text-lg">選擇 Excel 檔案</div>
                     </div>
                     <input type="file" id="schedule-file" accept=".xlsx, .xls" class="hidden" onchange="window.handleScheduleUpload(event)">
                 </div>
             </div>
 
             <!-- Database Status -->
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                <h3 class="text-md font-bold text-slate-800 mb-3"><i class="fa-solid fa-server text-slate-400 mr-2"></i>雲端資料狀態</h3>
-                <div class="overflow-x-auto rounded-lg border border-slate-100">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                <h3 class="text-md font-bold text-brand-800 mb-4">雲端資料狀態</h3>
+                <div class="overflow-x-auto rounded-lg border border-stone-200">
                     <table class="w-full text-sm text-left" id="status-table">
-                        <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                        <thead class="text-xs text-stone-600 uppercase bg-beige-100 border-b border-stone-200">
                             <tr>
-                                <th class="px-4 py-2">門市名稱</th>
-                                <th class="px-4 py-2">雲端已存區間</th>
-                                <th class="px-4 py-2 text-right">操作</th>
+                                <th class="px-4 py-3 font-bold whitespace-nowrap w-24 text-center">門市名稱</th>
+                                <th class="px-4 py-3 font-bold w-full text-center">雲端已存區間</th>
+                                <th class="px-4 py-3 font-bold whitespace-nowrap w-16 text-center">操作</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100" id="status-table-body">
+                        <tbody class="divide-y divide-stone-100" id="status-table-body">
                             <!-- Status injected here -->
                         </tbody>
                     </table>
@@ -241,7 +245,7 @@
         };
         let db, auth;
 
-        // --- Initialize Environment ---
+        // --- STREAMING_CHUNK:Initialization and Syncing ---
         window.initApp = async function() {
             initUI();
             
@@ -255,16 +259,16 @@
                     listenToCloudData();
                     
                     document.getElementById('cloud-status').innerText = '雲端已連線';
-                    document.getElementById('cloud-status').classList.replace('text-amber-600', 'text-emerald-600');
+                    document.getElementById('cloud-status').classList.replace('text-amber-700', 'text-emerald-700');
                 } catch (e) {
                     console.error("Firebase init error:", e);
-                    document.getElementById('cloud-status').innerText = '僅本機模式 (連線失敗)';
-                    document.getElementById('cloud-status').classList.replace('text-emerald-600', 'text-amber-600');
+                    document.getElementById('cloud-status').innerText = '僅本機模式';
+                    document.getElementById('cloud-status').classList.replace('text-emerald-700', 'text-amber-700');
                     loadDataFromLocal(); 
                 }
             } else {
-                document.getElementById('cloud-status').innerText = '請先填寫 Firebase 金鑰';
-                document.getElementById('cloud-status').classList.replace('text-emerald-600', 'text-amber-600');
+                document.getElementById('cloud-status').innerText = '未設定雲端';
+                document.getElementById('cloud-status').classList.replace('text-emerald-700', 'text-amber-700');
                 loadDataFromLocal();
             }
         };
@@ -327,7 +331,7 @@
             } catch (e) {}
         }
 
-        // --- UI Navigation and General Logic ---
+        // --- STREAMING_CHUNK:UI Interactions ---
         function initUI() {
             const today = new Date();
             const y = today.getFullYear();
@@ -339,9 +343,9 @@
             STORE_LIST.forEach(store => {
                 const short = getShortStoreName(store);
                 const html = `
-                    <label class="inline-flex items-center cursor-pointer border border-slate-200 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-full text-xs font-medium transition-colors store-pill" data-id="${store.id}">
+                    <label class="inline-flex items-center cursor-pointer border border-stone-200 bg-white hover:bg-beige-100 px-4 py-2 rounded-full text-xs font-bold transition-colors store-pill" data-id="${store.id}">
                         <input type="checkbox" class="hidden store-checkbox" value="${store.id}" onchange="window.toggleStoreSelection()">
-                        <span class="text-slate-700">${short}</span>
+                        <span class="text-stone-700">${short}</span>
                     </label>
                 `;
                 checkboxContainer.insertAdjacentHTML('beforeend', html);
@@ -361,15 +365,16 @@
             currentView = viewId;
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             
-            const navDaily = document.getElementById('nav-daily');
-            const navStore = document.getElementById('nav-store');
-            if (navDaily && navStore) {
-                navDaily.className = "flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent";
-                navStore.className = "flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 border border-transparent";
-                
-                const activeNav = document.getElementById(`nav-${viewId}`);
-                if(activeNav) activeNav.className = "flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all shadow-sm bg-white text-brand-600 border border-slate-200/60";
-            }
+            ['daily', 'store'].forEach(id => {
+                const nav = document.getElementById(`nav-${id}`);
+                if(nav) {
+                    if(id === viewId) {
+                        nav.className = "flex-1 sm:flex-none px-5 py-1.5 text-sm font-bold rounded-md transition-all shadow-sm bg-white text-brand-700 border border-stone-200/60";
+                    } else {
+                        nav.className = "flex-1 sm:flex-none px-5 py-1.5 text-sm font-medium rounded-md transition-all text-stone-500 hover:text-brand-700 hover:bg-white/60 border border-transparent";
+                    }
+                }
+            });
 
             document.getElementById(`view-${viewId}`).classList.remove('hidden');
             refreshUI();
@@ -378,13 +383,13 @@
         window.showToast = function(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            const icon = type === 'success' ? '<i class="fa-solid fa-circle-check text-green-500"></i>' : 
-                         type === 'error' ? '<i class="fa-solid fa-circle-exclamation text-red-500"></i>' : 
-                         '<i class="fa-solid fa-circle-info text-blue-500"></i>';
-            const bgColor = type === 'error' ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200';
+            const icon = type === 'success' ? '<div class="w-3 h-3 rounded-full bg-green-500 flex-shrink-0"></div>' : 
+                         type === 'error' ? '<div class="w-3 h-3 rounded-full bg-red-500 flex-shrink-0"></div>' : 
+                         '<div class="w-3 h-3 rounded-full bg-blue-500 flex-shrink-0"></div>';
+            const bgColor = type === 'error' ? 'bg-red-50 border-red-200' : 'bg-white border-stone-200';
 
             toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border ${bgColor} transform transition-all duration-300 translate-y-10 opacity-0`;
-            toast.innerHTML = `${icon} <span class="text-sm font-medium text-slate-700">${message}</span>`;
+            toast.innerHTML = `${icon} <span class="text-sm font-bold text-stone-700">${message}</span>`;
             
             container.appendChild(toast);
             setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
@@ -394,14 +399,13 @@
             }, 3000);
         };
 
-        // --- Parsing Engine Helpers ---
+        // --- STREAMING_CHUNK:Parsing Engine Helpers ---
         function getShortStoreName(store) {
             let shortName = store.name.replace('門市', '');
             if (shortName.startsWith('台中')) shortName = shortName.replace('台中', '');
             return shortName;
         }
 
-        // 防呆功能：檢查文字是否等同於門市自己的名稱 (強化版，包含多餘空白與干擾字元)
         function isSelfStoreName(text, storeObj) {
             if (!text || !storeObj) return false;
             const t = String(text).replace(/\s+/g, '').toUpperCase();
@@ -420,7 +424,6 @@
             return false;
         }
 
-        // 判斷是否為跨店支援人員 (用來排序)
         function isSupportStaff(emp) {
             if (!emp || !emp.shifts) return false;
             const values = Object.values(emp.shifts);
@@ -501,7 +504,7 @@
             await saveStoreToCloud(storeId);
         }
 
-        // --- File Upload & Excel Parsing logic ---
+        // --- STREAMING_CHUNK:File Upload & Excel Parsing logic ---
         window.handleScheduleUpload = function(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -784,7 +787,7 @@
             reader.readAsArrayBuffer(file);
         };
 
-        // --- UI Render Logic ---
+        // --- STREAMING_CHUNK:UI Render Logic ---
         function updateStatusUI() {
             const tbody = document.getElementById('status-table-body');
             tbody.innerHTML = '';
@@ -793,18 +796,20 @@
                 const periods = storeData ? Object.keys(storeData).sort().reverse() : [];
                 
                 let badgesHTML = periods.length > 0 
-                    ? periods.map(p => `<span class="inline-block bg-brand-50 border border-brand-100 text-brand-700 text-xs px-2 py-1 rounded mr-1 mb-1">${p}</span>`).join('')
-                    : '<span class="text-xs text-slate-400">尚無資料</span>';
+                    ? periods.map(p => `<span class="inline-block bg-beige-100 border border-stone-200 text-brand-800 font-medium text-xs px-2 py-1 rounded mr-1 mb-1 whitespace-nowrap">${p}</span>`).join('')
+                    : '<span class="text-xs text-stone-400">尚無資料</span>';
 
                 let deleteBtnHTML = periods.length > 0 
-                    ? `<button onclick="window.deleteStoreData('${store.id}')" class="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"><i class="fa-solid fa-trash mr-1"></i>清除</button>`
-                    : `<span class="text-xs text-slate-300">-</span>`;
+                    ? `<button onclick="window.deleteStoreData('${store.id}')" class="text-stone-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition-colors" title="清除資料"><i class="fa-solid fa-trash-can text-base"></i></button>`
+                    : `<span class="text-xs text-stone-300">-</span>`;
+
+                const shortName = getShortStoreName(store);
 
                 const tr = `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-4 py-3 font-medium text-slate-700">${store.id} ${store.name}</td>
-                        <td class="px-4 py-3">${badgesHTML}</td>
-                        <td class="px-4 py-3 text-right">${deleteBtnHTML}</td>
+                    <tr class="hover:bg-beige-50 transition-colors">
+                        <td class="px-4 py-3 font-bold text-stone-700 whitespace-nowrap text-center">${shortName}</td>
+                        <td class="px-4 py-3 text-center">${badgesHTML}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">${deleteBtnHTML}</td>
                     </tr>
                 `;
                 tbody.insertAdjacentHTML('beforeend', tr);
@@ -880,36 +885,35 @@
                         
                         // 判定是否為支援人員，給予較淺的文字顏色
                         const isSupport = isSupportStaff(emp);
-                        const nameClasses = isSupport ? 'text-slate-400 font-medium' : 'font-bold text-slate-700';
+                        const nameClasses = isSupport ? 'text-stone-400 font-medium' : 'font-bold text-stone-700';
                         
                         if (shiftCode) {
                             if (isOff) {
-                                offHtml += `<div class="flex justify-between items-center py-1 text-xs text-slate-400">
-                                    <span class="${isSupport ? 'text-slate-300' : ''}">${emp.name}</span><span class="border border-slate-200 px-1 rounded bg-slate-50">休假</span>
+                                offHtml += `<div class="flex justify-between items-center py-1 text-xs text-stone-400">
+                                    <span class="${isSupport ? 'text-stone-300' : 'font-medium'}">${emp.name}</span><span class="border border-stone-200 px-1.5 py-0.5 rounded bg-stone-50 font-medium text-stone-500">休假</span>
                                 </div>`;
                             } else {
                                 workingCount++;
                                 if (shiftCode === 'WORK') {
-                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></div><span class="text-xs bg-blue-50 text-blue-700 px-1.5 rounded">上班</span></div>`;
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-brand-500 shadow-sm"></div><span class="text-xs bg-brand-50 text-brand-700 px-1.5 py-0.5 rounded font-bold">上班</span></div>`;
                                 } else if (shiftCode === 'OVERTIME') {
-                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 rounded border border-orange-100">加班</span></div>`;
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded border border-orange-100 font-bold">加班</span></div>`;
                                 } else if (shiftCode === 'CROSS_IN') {
-                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></div><span class="text-xs bg-emerald-50 text-emerald-700 px-1.5 rounded border border-emerald-100">支援</span></div>`;
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></div><span class="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 font-bold">支援</span></div>`;
                                 } else if (shiftCode === 'CROSS_IN_OT') {
-                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 rounded border border-orange-100">支援(加班)</span></div>`;
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded border border-orange-100 font-bold">支援(加班)</span></div>`;
                                 } else if (shiftCode.startsWith('OT_OUT:')) {
                                     const storeName = shiftCode.split(':')[1];
-                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 rounded border border-orange-100">${storeName}</span></div>`;
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded border border-orange-100 font-bold">${storeName}</span></div>`;
                                 } else if (shiftCode.startsWith('OUT:')) {
                                     const storeName = shiftCode.split(':')[1];
-                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></div><span class="text-xs bg-emerald-50 text-emerald-700 px-1.5 rounded border border-emerald-100">${storeName}</span></div>`;
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></div><span class="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 font-bold">${storeName}</span></div>`;
                                 } else {
-                                    const isExternal = !SHIFT_LOGIC[shiftCode] && !STORE_LIST.some(s => s.name.includes(shiftCode) || getShortStoreName(s).includes(shiftCode));
-                                    badgeHtml = `<span class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100 truncate max-w-[80px]">${shiftCode} ${isExternal ? '<span class="opacity-70">外站</span>' : ''}</span>`;
+                                    badgeHtml = `<span class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100 truncate max-w-[80px] font-bold">${shiftCode}</span>`;
                                 }
 
                                 workingHtml += `
-                                <div class="flex justify-between items-center py-2 border-b border-slate-50 last:border-0 group">
+                                <div class="flex justify-between items-center py-2 border-b border-stone-50 last:border-0 group">
                                     <span class="${nameClasses} text-sm truncate mr-2">${emp.name}</span>
                                     <div class="flex items-center whitespace-nowrap">${badgeHtml}</div>
                                 </div>`;
@@ -919,15 +923,15 @@
 
                     const shortTitle = getShortStoreName(store);
                     const card = `
-                    <div class="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-slate-200 flex flex-col h-full hover:shadow-md transition-shadow">
-                        <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
-                            <h3 class="font-bold text-base text-slate-800">${shortTitle}</h3>
-                            <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold shadow-inner">${workingCount} 人</span>
+                    <div class="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-stone-200 flex flex-col h-full hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-center mb-3 border-b border-stone-100 pb-2">
+                            <h3 class="font-bold text-base text-brand-800">${shortTitle}</h3>
+                            <span class="text-xs bg-beige-100 text-brand-700 px-2 py-0.5 rounded-full font-bold shadow-inner">${workingCount} 人</span>
                         </div>
                         <div class="space-y-0.5 flex-1 overflow-y-auto min-h-[60px]">
-                            ${workingHtml || '<div class="text-xs text-slate-400 py-3 text-center">無排班資料</div>'}
+                            ${workingHtml || '<div class="text-xs text-stone-400 py-3 text-center font-medium">無排班資料</div>'}
                         </div>
-                        ${offHtml ? `<div class="mt-2 pt-2 border-t border-dashed border-slate-200">${offHtml}</div>` : ''}
+                        ${offHtml ? `<div class="mt-2 pt-2 border-t border-dashed border-stone-200">${offHtml}</div>` : ''}
                     </div>
                     `;
                     grid.insertAdjacentHTML('beforeend', card);
@@ -936,8 +940,8 @@
 
             if (storesFound === 0) {
                 grid.innerHTML = `
-                    <div class="col-span-full py-12 text-center text-slate-500 bg-white rounded-xl border border-slate-100 shadow-sm">
-                        <i class="fa-regular fa-calendar-xmark text-4xl mb-3 text-slate-300"></i>
+                    <div class="col-span-full py-12 text-center text-stone-500 bg-white rounded-xl border border-stone-200 shadow-sm">
+                        <p class="text-lg font-bold text-brand-700 mb-1">無排班資料</p>
                         <p class="text-base font-medium">尚未有 ${dateStr} 的排班資料</p>
                     </div>
                 `;
@@ -976,15 +980,15 @@
                 const label = cb.closest('.store-pill');
                 if (cb.checked) {
                     selectedStores.push(cb.value);
-                    label.classList.add('bg-brand-500', 'border-brand-500');
-                    label.classList.remove('bg-white', 'border-slate-200');
+                    label.classList.add('bg-brand-600', 'border-brand-600');
+                    label.classList.remove('bg-white', 'border-stone-200', 'hover:bg-beige-100');
                     label.querySelector('span').classList.add('text-white');
-                    label.querySelector('span').classList.remove('text-slate-700');
+                    label.querySelector('span').classList.remove('text-stone-700');
                 } else {
-                    label.classList.remove('bg-brand-500', 'border-brand-500');
-                    label.classList.add('bg-white', 'border-slate-200');
+                    label.classList.remove('bg-brand-600', 'border-brand-600');
+                    label.classList.add('bg-white', 'border-stone-200', 'hover:bg-beige-100');
                     label.querySelector('span').classList.remove('text-white');
-                    label.querySelector('span').classList.add('text-slate-700');
+                    label.querySelector('span').classList.add('text-stone-700');
                 }
             });
             window.renderStoreView();
@@ -1020,7 +1024,7 @@
             const todayObj = new Date();
             const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth()+1).padStart(2,'0')}-${String(todayObj.getDate()).padStart(2,'0')}`;
 
-            let headerHTML = '<th class="px-1 sm:px-2 py-2 font-bold w-[70px] sm:w-[90px] min-w-[70px] sm:min-w-[90px] sticky left-0 top-0 bg-slate-100 z-40 shadow-[2px_2px_5px_-2px_rgba(0,0,0,0.1)] text-slate-700 text-center border-b-2 border-r border-slate-300">姓名</th>';
+            let headerHTML = '<th class="px-1 sm:px-2 py-2 font-bold w-[70px] sm:w-[90px] min-w-[70px] sm:min-w-[90px] sticky left-0 top-0 bg-beige-100 z-40 shadow-[2px_2px_5px_-2px_rgba(0,0,0,0.1)] text-brand-800 text-center border-b-2 border-r border-stone-200">姓名</th>';
             
             datesInRange.forEach(d => {
                 const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1028,13 +1032,13 @@
                 
                 const dayOfWeek = d.getDay();
                 const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                const textClass = isWeekend ? 'text-red-500 font-bold' : 'text-slate-600';
-                const dateLabel = `${d.getMonth()+1}/${d.getDate()}<br><span class="text-[10px]">(${weekDays[dayOfWeek]})</span>`;
+                const textClass = isWeekend ? 'text-red-500 font-bold' : 'text-stone-600';
+                const dateLabel = `${d.getMonth()+1}/${d.getDate()}<br><span class="text-[10px] font-medium">(${weekDays[dayOfWeek]})</span>`;
                 
                 if (isToday) {
-                    headerHTML += `<th class="px-1 sm:px-2 py-2 text-center w-[55px] sm:w-[65px] min-w-[55px] sm:min-w-[65px] max-w-[65px] text-amber-900 bg-amber-100 font-bold leading-tight border-t-2 border-x-2 border-b-0 border-amber-400 sticky top-0 z-30">${dateLabel}</th>`;
+                    headerHTML += `<th class="px-1 sm:px-2 py-2 text-center w-[55px] sm:w-[65px] min-w-[55px] sm:min-w-[65px] max-w-[65px] text-amber-900 bg-amber-100 font-bold leading-tight border-t-2 border-x-2 border-b-0 border-amber-500 sticky top-0 z-30">${dateLabel}</th>`;
                 } else {
-                    headerHTML += `<th class="px-1 sm:px-2 py-2 text-center w-[55px] sm:w-[65px] min-w-[55px] sm:min-w-[65px] max-w-[65px] ${textClass} bg-slate-100 font-bold leading-tight border-b-2 border-slate-300 sticky top-0 z-30">${dateLabel}</th>`;
+                    headerHTML += `<th class="px-1 sm:px-2 py-2 text-center w-[55px] sm:w-[65px] min-w-[55px] sm:min-w-[65px] max-w-[65px] ${textClass} bg-beige-100 font-bold leading-tight border-b-2 border-stone-200 sticky top-0 z-30">${dateLabel}</th>`;
                 }
             });
 
@@ -1058,15 +1062,15 @@
                     return aSupport ? 1 : -1;
                 });
 
-                let storeRowHTML = `<td class="px-1 sm:px-2 py-2 font-bold text-brand-700 text-center sticky left-0 bg-slate-50 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-[13px] sm:text-sm border-b border-r border-slate-200">${shortName}</td>`;
+                let storeRowHTML = `<td class="px-1 sm:px-2 py-2 font-bold text-brand-700 text-center sticky left-0 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-[13px] sm:text-sm border-b border-r border-stone-200">${shortName}</td>`;
                 
                 datesInRange.forEach(d => {
                     const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                     const isToday = dateStr === todayStr;
                     if (isToday) {
-                        storeRowHTML += `<td class="bg-amber-50/80 border-x-2 border-amber-400 border-y-0 p-0 relative z-10"></td>`;
+                        storeRowHTML += `<td class="bg-amber-50/80 border-x-2 border-amber-500 border-y-0 p-0 relative z-10"></td>`;
                     } else {
-                        storeRowHTML += `<td class="bg-slate-50/40 border-b border-slate-200 p-0"></td>`;
+                        storeRowHTML += `<td class="bg-stone-50/40 border-b border-stone-200 p-0"></td>`;
                     }
                 });
                 
@@ -1077,9 +1081,9 @@
                     
                     // 支援同仁的名字使用較淺的文字顏色
                     const isSupport = isSupportStaff(emp);
-                    const nameClasses = isSupport ? 'text-slate-400 font-medium' : 'text-slate-800 font-bold';
+                    const nameClasses = isSupport ? 'text-stone-400 font-medium' : 'text-stone-800 font-bold';
 
-                    let cellsHTML = `<td class="px-1 sm:px-2 py-2 ${nameClasses} text-center sticky left-0 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-[13px] sm:text-sm border-b border-r border-slate-100 group-hover/row:bg-slate-50 transition-colors">${emp.name}</td>`;
+                    let cellsHTML = `<td class="px-1 sm:px-2 py-2 ${nameClasses} text-center sticky left-0 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-[13px] sm:text-sm border-b border-r border-stone-100 group-hover/row:bg-beige-50 transition-colors">${emp.name}</td>`;
                     
                     datesInRange.forEach(d => {
                         const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1114,19 +1118,19 @@
 
                         let desc = SHIFT_LOGIC[code] || '';
                         
-                        let bgClass = 'hover:bg-slate-100';
-                        let displayContent = `<span class="text-slate-800 font-bold text-[11px] sm:text-xs truncate block w-full px-0.5">${code}</span>`;
+                        let bgClass = 'hover:bg-stone-100';
+                        let displayContent = `<span class="text-stone-800 font-bold text-[11px] sm:text-xs truncate block w-full px-0.5">${code}</span>`;
                         
                         const isExternal = code && !SHIFT_LOGIC[code] && !STORE_LIST.some(s => s.name.includes(code) || getShortStoreName(s).includes(code)) && !code.includes(':') && code!=='WORK' && code!=='OVERTIME' && code!=='CROSS_IN' && code!=='CROSS_IN_OT' && code!=='休';
                         let tooltipDesc = isExternal ? `${code} 外站` : desc;
                         
                         if (code === '休' || code.toUpperCase() === 'OFF' || code.includes('休')) {
-                            bgClass = 'bg-slate-50 text-slate-400 font-normal';
-                            displayContent = `<span class="text-slate-400 font-normal text-[11px] sm:text-xs">休</span>`;
+                            bgClass = 'bg-stone-50 text-stone-400 font-normal';
+                            displayContent = `<span class="text-stone-400 font-normal text-[11px] sm:text-xs">休</span>`;
                             tooltipDesc = '休假';
                         } else if (code === 'WORK') {
-                            bgClass = 'hover:bg-slate-200 transition-colors';
-                            displayContent = '<div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-blue-500 mx-auto shadow-sm"></div>';
+                            bgClass = 'hover:bg-stone-200 transition-colors';
+                            displayContent = '<div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-brand-500 mx-auto shadow-sm"></div>';
                             tooltipDesc = '上班';
                         } else if (code === 'OVERTIME') {
                             bgClass = 'bg-orange-50 hover:bg-orange-100 transition-colors';
@@ -1156,16 +1160,16 @@
                         }
                         
                         if (isToday) {
-                            let bottomBorder = isLastEmp ? 'border-b-2 border-amber-400' : 'border-y-0';
+                            let bottomBorder = isLastEmp ? 'border-b-2 border-amber-500' : 'border-y-0';
                             cellsHTML += `
-                                <td class="px-0 py-2 text-center bg-amber-50/80 border-x-2 ${bottomBorder} border-amber-400 relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] z-10">
+                                <td class="px-0 py-2 text-center bg-amber-50/80 border-x-2 ${bottomBorder} border-amber-500 relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] z-10">
                                     <div class="absolute inset-0 hover:bg-amber-100/50 transition-colors z-0"></div>
                                     <div class="flex items-center justify-center w-full h-full overflow-hidden relative z-10">${displayContent}</div>
                                     ${code ? `
                                     <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50">
-                                        <div class="bg-slate-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
+                                        <div class="bg-brand-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
                                             ${tooltipDesc}
-                                            <svg class="absolute text-slate-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
+                                            <svg class="absolute text-brand-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
                                         </div>
                                     </div>
                                     ` : ''}
@@ -1173,13 +1177,13 @@
                             `;
                         } else {
                             cellsHTML += `
-                                <td class="px-0 py-2 text-center border-b border-slate-100 ${bgClass} relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px]">
+                                <td class="px-0 py-2 text-center border-b border-stone-100 ${bgClass} relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px]">
                                     <div class="flex items-center justify-center w-full h-full overflow-hidden">${displayContent}</div>
                                     ${code ? `
                                     <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50">
-                                        <div class="bg-slate-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
+                                        <div class="bg-brand-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
                                             ${tooltipDesc}
-                                            <svg class="absolute text-slate-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
+                                            <svg class="absolute text-brand-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
                                         </div>
                                     </div>
                                     ` : ''}
@@ -1195,10 +1199,10 @@
                 emptyState.classList.remove('hidden');
             } else {
                 const finalTableHTML = `
-                <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden pb-px pr-px">
+                <div class="bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden pb-px pr-px">
                     <div class="overflow-auto relative max-h-[calc(100vh-230px)] custom-scrollbar">
                         <table class="w-full text-sm text-left whitespace-nowrap table-fixed border-separate" style="border-spacing: 0;">
-                            <thead class="text-xs text-slate-700 uppercase">
+                            <thead class="text-xs text-stone-700 uppercase">
                                 <tr>${headerHTML}</tr>
                             </thead>
                             <tbody>
