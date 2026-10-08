@@ -197,7 +197,7 @@
     <script type="module">
         // --- Firebase Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Core Data ---
@@ -229,16 +229,15 @@
         let selectedStores = [];
 
         // --- Firebase Setup ---
-        const appId = 'tc-schedule-app'; // 固定一個應用程式ID
+        const appId = 'tc-schedule-app'; 
         
-        // TODO: 請將下方的 firebaseConfig 內容，替換成您剛剛在 Firebase 後台複製的金鑰！
         const firebaseConfig = {
             apiKey: "AIzaSyCbo_ah1vRp757j_P2jRDIcmCLBjjq2lvE",
-  authDomain: "c01-schedule-system.firebaseapp.com",
-  projectId: "c01-schedule-system",
-  storageBucket: "c01-schedule-system.firebasestorage.app",
-  messagingSenderId: "391707792192",
-  appId: "1:391707792192:web:5df5a0824720bb867fa0a5"
+            authDomain: "c01-schedule-system.firebaseapp.com",
+            projectId: "c01-schedule-system",
+            storageBucket: "c01-schedule-system.firebasestorage.app",
+            messagingSenderId: "391707792192",
+            appId: "1:391707792192:web:5df5a0824720bb867fa0a5"
         };
         let db, auth;
 
@@ -252,10 +251,7 @@
                     db = getFirestore(app);
                     auth = getAuth(app);
                     
-                    // 進行匿名登入 (取得資料庫讀寫權限)
                     await signInAnonymously(auth);
-                    
-                    // 成功連線後開始監聽雲端資料
                     listenToCloudData();
                     
                     document.getElementById('cloud-status').innerText = '雲端已連線';
@@ -277,7 +273,6 @@
             if (!auth || !auth.currentUser) return;
             const schedulesRef = collection(db, 'artifacts', appId, 'public', 'data', 'schedules');
             
-            // onSnapshot with error handler
             onSnapshot(schedulesRef, (snapshot) => {
                 let newData = {};
                 snapshot.forEach(doc => {
@@ -291,7 +286,6 @@
         }
 
         async function saveStoreToCloud(storeId) {
-            // Also save locally as backup
             localStorage.setItem('schedules', JSON.stringify(window.appState.schedules));
             
             if (!auth || !auth.currentUser) return;
@@ -321,7 +315,7 @@
                 showToast(`已清除門市資料`);
             }
         }
-        window.deleteStoreData = deleteStoreFromCloud; // Expose
+        window.deleteStoreData = deleteStoreFromCloud; 
 
         function loadDataFromLocal() {
             try {
@@ -341,7 +335,6 @@
             const d = String(today.getDate()).padStart(2, '0');
             document.getElementById('daily-date').value = `${y}-${m}-${d}`;
 
-            // Generate Store Checkboxes
             const checkboxContainer = document.getElementById('store-checkbox-container');
             STORE_LIST.forEach(store => {
                 const short = getShortStoreName(store);
@@ -368,7 +361,6 @@
             currentView = viewId;
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             
-            // Reset nav buttons
             const navDaily = document.getElementById('nav-daily');
             const navStore = document.getElementById('nav-store');
             if (navDaily && navStore) {
@@ -380,7 +372,6 @@
             }
 
             document.getElementById(`view-${viewId}`).classList.remove('hidden');
-            
             refreshUI();
         };
 
@@ -410,12 +401,47 @@
             return shortName;
         }
 
-        // 強化的跨店辨識器 (解決台中大雅與大雅的不對稱問題)
+        // 防呆功能：檢查文字是否等同於門市自己的名稱 (強化版，包含多餘空白與干擾字元)
+        function isSelfStoreName(text, storeObj) {
+            if (!text || !storeObj) return false;
+            const t = String(text).replace(/\s+/g, '').toUpperCase();
+            if (!t) return false;
+            
+            const n3 = getShortStoreName(storeObj).toUpperCase();
+            
+            if (t === n3 || t === `HA${n3}`) return true;
+            
+            if (t.includes(n3)) {
+                if (t.includes('加班') || t.includes('休') || t.includes('外站') || t.includes('假')) {
+                    return false;
+                }
+                if (t.length <= n3.length + 4) return true;
+            }
+            return false;
+        }
+
+        // 判斷是否為跨店支援人員 (用來排序)
+        function isSupportStaff(emp) {
+            if (!emp || !emp.shifts) return false;
+            const values = Object.values(emp.shifts);
+            let hasCross = false;
+            let hasNative = false;
+            
+            for (let code of values) {
+                if (!code) continue;
+                if (code === 'CROSS_IN' || code === 'CROSS_IN_OT') {
+                    hasCross = true;
+                } else if (code !== '休' && !code.includes('休') && !code.includes('請假') && code !== 'OFF' && code !== 'O') {
+                    hasNative = true;
+                }
+            }
+            return hasCross && !hasNative;
+        }
+
         function findCrossStore(text, currentStoreId) {
             if (!text) return null;
             for (const store of STORE_LIST) {
                 if (store.id === currentStoreId) continue;
-                // 用三個層級來捕捉：全名(台中大雅門市)、去門市(台中大雅)、去台中(大雅)
                 const name1 = store.name;                           
                 const name2 = store.name.replace('門市', '');         
                 const name3 = getShortStoreName(store);             
@@ -430,7 +456,7 @@
         function autoDetectStore(filename) {
             if (!filename) return null;
             for (const store of STORE_LIST) {
-                const shortName = getShortStoreName(store); // 如: 大雅、崇德
+                const shortName = getShortStoreName(store);
                 if (filename.includes(store.name) || filename.includes(store.id) || 
                     filename.includes(store.name.replace('門市', '')) || filename.includes(shortName)) {
                     return store.id;
@@ -463,7 +489,6 @@
                 const exEmp = existing.find(e => e.name === newEmp.name);
                 if (exEmp) {
                     for (const [date, newCode] of Object.entries(newEmp.shifts)) {
-                        // 如果是被動匯入的休假，不覆蓋原有的支援紀錄
                         if (!isInjected && (exEmp.shifts[date] === 'CROSS_IN' || exEmp.shifts[date] === 'CROSS_IN_OT') && (newCode === '休' || !newCode)) {
                             continue;
                         }
@@ -493,20 +518,20 @@
                     let totalEmployees = 0;
                     let crossStoreShiftsMap = {};
 
-                    // Read each sheet
                     for (const sheetName of workbook.SheetNames) {
                         const worksheet = workbook.Sheets[sheetName];
                         const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1, raw: false, dateNF: 'yyyy-mm-dd', defval: ""});
                         if (rows.length === 0) continue;
 
                         let currentStoreId = autoDetectStore(sheetName) || fileStoreId;
-                        if (!currentStoreId) continue; // 找不到對應門市就跳過該分頁
+                        if (!currentStoreId) continue; 
+                        
+                        const currentStoreObj = STORE_LIST.find(s => s.id === currentStoreId);
 
                         let isVerticalFormat = false;
                         let nameCol = -1, dateCol = -1, statusCol = -1, shiftCol = -1, noteCol = -1;
                         let headerRowIdx = -1;
 
-                        // 1. Detect format
                         for (let i = 0; i < Math.min(rows.length, 10); i++) {
                             const rowStr = rows[i].join('').toLowerCase();
                             if (rowStr.includes('姓名') && rowStr.includes('日期')) {
@@ -530,9 +555,8 @@
 
                         let employeesData = [];
                         let targetPeriod = "";
-                        const currentStoreName = getShortStoreName(STORE_LIST.find(s => s.id === currentStoreId));
+                        const currentStoreName = getShortStoreName(currentStoreObj);
 
-                        // 2. Parse Vertical Format
                         if (isVerticalFormat) {
                             let minDateObj = null, maxDateObj = null;
                             let tempEmployees = {};
@@ -556,13 +580,29 @@
 
                                 const status = statusCol !== -1 ? String(row[statusCol]).trim() : '';
                                 const shift = shiftCol !== -1 ? String(row[shiftCol]).trim() : '';
-                                const note = noteCol !== -1 ? String(row[noteCol]).trim() : '';
+                                let note = noteCol !== -1 ? String(row[noteCol]).trim() : '';
+
+                                let extraNotes = '';
+                                let maxKnownCol = Math.max(nameCol, dateCol, statusCol, shiftCol, noteCol);
+                                for (let c = maxKnownCol + 1; c < Math.min(row.length, 20); c++) {
+                                    if (row[c]) extraNotes += " " + String(row[c]).trim();
+                                }
+
+                                let originalNote = note;
+
+                                if (note === '老人' || (note.includes('老人') && !note.includes('老人醫院'))) {
+                                    note = note.replace('老人', '老人醫院');
+                                }
+                                note = note.replace(/^(星期)?[一ㄧ二三四五六日][\s\/\-、_]*/, '').trim();
+                                if (note === '鹿' || (note.includes('鹿') && !note.includes('鹿基'))) {
+                                    note = note.replace('鹿', '鹿基');
+                                }
 
                                 let finalCode = '';
                                 let targetCrossStore = null;
                                 let isOT = false;
 
-                                const crossCheckText = (note + " " + shift).toUpperCase();
+                                const crossCheckText = (note + " " + shift + extraNotes).toUpperCase();
                                 isOT = crossCheckText.includes('加班');
                                 const crossStore = findCrossStore(crossCheckText, currentStoreId);
                                 
@@ -570,14 +610,15 @@
                                     targetCrossStore = crossStore;
                                     const shortName = getShortStoreName(targetCrossStore);
                                     finalCode = isOT ? `OT_OUT:${shortName}` : `OUT:${shortName}`;
-                                } else if (isOT || note.includes(currentStoreName + '加班')) {
+                                } else if (isOT || crossCheckText.includes(currentStoreName + '加班')) {
                                     finalCode = 'OVERTIME';
                                 } else if (note) {
                                     finalCode = note;
                                 }
 
                                 if (!finalCode) {
-                                    if (shift.toUpperCase().startsWith('S') || shift === 'W0001') finalCode = 'WORK';
+                                    if (originalNote && !note && !shift && !status) finalCode = 'WORK';
+                                    else if (shift.toUpperCase().startsWith('S') || shift === 'W0001') finalCode = 'WORK';
                                     else if (shift) finalCode = shift; 
                                 }
 
@@ -587,7 +628,15 @@
                                     else finalCode = status;
                                 }
 
-                                if (['M0002', 'M0003', 'M0004', '休假', '休息日', '例假日', '休', 'OFF', 'O'].includes(finalCode)) finalCode = '休'; 
+                                if (finalCode.includes('請假') || ['M0002', 'M0003', 'M0004', '休假', '休息日', '例假日', '休', 'OFF', 'O'].includes(finalCode)) {
+                                    finalCode = '休'; 
+                                }
+
+                                if (finalCode && finalCode !== '休' && finalCode !== 'WORK' && finalCode !== 'OVERTIME' && !finalCode.includes(':')) {
+                                    if (isSelfStoreName(finalCode, currentStoreObj) || isSelfStoreName(shift, currentStoreObj)) {
+                                        finalCode = 'WORK';
+                                    }
+                                }
 
                                 if (!tempEmployees[name]) tempEmployees[name] = { shifts: {} };
                                 if (finalCode) tempEmployees[name].shifts[formattedDate] = finalCode;
@@ -604,7 +653,6 @@
                             for (const [empName, data] of Object.entries(tempEmployees)) employeesData.push({ name: empName, shifts: data.shifts });
 
                         } else {
-                            // 3. Parse Horizontal Format
                             let dateColumnMap = {}, nameColumnIndex = -1, datesFound = [];
                             const dateRegex = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/;
 
@@ -653,6 +701,20 @@
                                     if (colIdx !== undefined) {
                                         let code = String(row[colIdx] || "").trim();
                                         if (code) {
+                                            let originalCode = code;
+
+                                            if (code === '老人' || (code.includes('老人') && !code.includes('老人醫院'))) {
+                                                code = code.replace('老人', '老人醫院');
+                                            }
+                                            code = code.replace(/^(星期)?[一ㄧ二三四五六日][\s\/\-、_]*/, '').trim();
+                                            if (code === '鹿' || (code.includes('鹿') && !code.includes('鹿基'))) {
+                                                code = code.replace('鹿', '鹿基');
+                                            }
+
+                                            if (originalCode && !code) {
+                                                code = 'WORK';
+                                            }
+                                            
                                             let finalCode = code, targetCrossStore = null;
                                             const isOT = code.includes('加班');
                                             const crossStore = findCrossStore(code, currentStoreId);
@@ -665,9 +727,16 @@
                                                 finalCode = 'OVERTIME';
                                             } else if (code.toUpperCase().startsWith('S') || code === 'W0001') {
                                                 finalCode = 'WORK';
-                                            } else if (['M0002', 'M0003', 'M0004', '休假', '休息日', '例假日', '休', 'OFF', 'O'].includes(code)) {
-                                                finalCode = '休';
+                                            } else if (code.includes('請假') || ['M0002', 'M0003', 'M0004', '休假', '休息日', '例假日', '休', 'OFF', 'O'].includes(code)) {
+                                                finalCode = '休'; 
                                             }
+                                            
+                                            if (finalCode && finalCode !== '休' && finalCode !== 'WORK' && finalCode !== 'OVERTIME' && !finalCode.includes(':')) {
+                                                if (isSelfStoreName(finalCode, currentStoreObj)) {
+                                                    finalCode = 'WORK';
+                                                }
+                                            }
+
                                             shifts[dateStr] = finalCode;
 
                                             if (targetCrossStore) {
@@ -683,11 +752,9 @@
                             }
                         }
 
-                        // Write local and queue cloud save
                         if (employeesData.length > 0) {
                             await mergeSchedule(currentStoreId, targetPeriod, employeesData, false);
                             
-                            // Process cross store shifts
                             for (const [otherStoreId, empsObj] of Object.entries(crossStoreShiftsMap)) {
                                 const crossEmpsArray = Object.keys(empsObj).map(empName => ({
                                     name: empName, shifts: empsObj[empName].shifts
@@ -695,11 +762,10 @@
                                 await mergeSchedule(otherStoreId, targetPeriod, crossEmpsArray, true);
                             }
                             
-                            const parsedStoreObj = STORE_LIST.find(s => s.id === currentStoreId);
-                            if (parsedStoreObj && !importedStores.includes(parsedStoreObj.name)) importedStores.push(parsedStoreObj.name);
+                            if (currentStoreObj && !importedStores.includes(currentStoreObj.name)) importedStores.push(currentStoreObj.name);
                             totalEmployees += employeesData.length;
                         }
-                    } // end sheets loop
+                    }
 
                     if (importedStores.length > 0) {
                         showToast(`成功匯入 ${importedStores.join(', ')} 班表，共計 ${totalEmployees} 人`);
@@ -772,16 +838,54 @@
                     let offHtml = '';
                     let workingCount = 0;
 
-                    targetStoreSchedule.forEach(emp => {
-                        const shiftCode = emp.shifts[dateStr] || '';
+                    // 排序：將跨門市支援人員放到底部
+                    const sortedTargetStoreSchedule = [...targetStoreSchedule].sort((a, b) => {
+                        const aSupport = isSupportStaff(a);
+                        const bSupport = isSupportStaff(b);
+                        if (aSupport === bSupport) return 0;
+                        return aSupport ? 1 : -1;
+                    });
+
+                    sortedTargetStoreSchedule.forEach(emp => {
+                        let shiftCode = emp.shifts[dateStr] || '';
+                        
+                        if (shiftCode) {
+                            let originalShift = shiftCode;
+
+                            if (shiftCode.includes('請假')) {
+                                shiftCode = '休';
+                            }
+                            if (shiftCode === '老人' || (shiftCode.includes('老人') && !shiftCode.includes('老人醫院'))) {
+                                shiftCode = shiftCode.replace('老人', '老人醫院');
+                            }
+                            shiftCode = shiftCode.replace(/^(星期)?[一ㄧ二三四五六日][\s\/\-、_]*/, '').trim();
+                            if (shiftCode === '鹿' || (shiftCode.includes('鹿') && !shiftCode.includes('鹿基'))) {
+                                shiftCode = shiftCode.replace('鹿', '鹿基');
+                            }
+
+                            if (originalShift && !shiftCode) {
+                                shiftCode = 'WORK';
+                            }
+
+                            if (shiftCode && shiftCode !== '休' && shiftCode !== 'WORK' && shiftCode !== 'OVERTIME' && !shiftCode.includes(':')) {
+                                if (isSelfStoreName(shiftCode, store)) {
+                                    shiftCode = 'WORK';
+                                }
+                            }
+                        }
+
                         const logicDesc = SHIFT_LOGIC[shiftCode] || '';
                         const isOff = shiftCode === '休' || shiftCode.toUpperCase() === 'OFF' || shiftCode.includes('休') || logicDesc.includes('休');
                         let badgeHtml = '';
                         
+                        // 判定是否為支援人員，給予較淺的文字顏色
+                        const isSupport = isSupportStaff(emp);
+                        const nameClasses = isSupport ? 'text-slate-400 font-medium' : 'font-bold text-slate-700';
+                        
                         if (shiftCode) {
                             if (isOff) {
                                 offHtml += `<div class="flex justify-between items-center py-1 text-xs text-slate-400">
-                                    <span>${emp.name}</span><span class="border border-slate-200 px-1 rounded bg-slate-50">休假</span>
+                                    <span class="${isSupport ? 'text-slate-300' : ''}">${emp.name}</span><span class="border border-slate-200 px-1 rounded bg-slate-50">休假</span>
                                 </div>`;
                             } else {
                                 workingCount++;
@@ -800,14 +904,13 @@
                                     const storeName = shiftCode.split(':')[1];
                                     badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></div><span class="text-xs bg-emerald-50 text-emerald-700 px-1.5 rounded border border-emerald-100">${storeName}</span></div>`;
                                 } else {
-                                    // 外站判定
                                     const isExternal = !SHIFT_LOGIC[shiftCode] && !STORE_LIST.some(s => s.name.includes(shiftCode) || getShortStoreName(s).includes(shiftCode));
                                     badgeHtml = `<span class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100 truncate max-w-[80px]">${shiftCode} ${isExternal ? '<span class="opacity-70">外站</span>' : ''}</span>`;
                                 }
 
                                 workingHtml += `
                                 <div class="flex justify-between items-center py-2 border-b border-slate-50 last:border-0 group">
-                                    <span class="font-bold text-sm text-slate-700 truncate mr-2">${emp.name}</span>
+                                    <span class="${nameClasses} text-sm truncate mr-2">${emp.name}</span>
                                     <div class="flex items-center whitespace-nowrap">${badgeHtml}</div>
                                 </div>`;
                             }
@@ -917,8 +1020,7 @@
             const todayObj = new Date();
             const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth()+1).padStart(2,'0')}-${String(todayObj.getDate()).padStart(2,'0')}`;
 
-            // 表頭：使用 border-separate 以實現一體化光柱
-            let headerHTML = '<th class="px-1 sm:px-2 py-2 font-bold w-[70px] sm:w-[90px] min-w-[70px] sm:min-w-[90px] sticky left-0 bg-slate-100 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-slate-700 text-center border-b-2 border-r border-slate-300">姓名</th>';
+            let headerHTML = '<th class="px-1 sm:px-2 py-2 font-bold w-[70px] sm:w-[90px] min-w-[70px] sm:min-w-[90px] sticky left-0 top-0 bg-slate-100 z-40 shadow-[2px_2px_5px_-2px_rgba(0,0,0,0.1)] text-slate-700 text-center border-b-2 border-r border-slate-300">姓名</th>';
             
             datesInRange.forEach(d => {
                 const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -930,10 +1032,9 @@
                 const dateLabel = `${d.getMonth()+1}/${d.getDate()}<br><span class="text-[10px]">(${weekDays[dayOfWeek]})</span>`;
                 
                 if (isToday) {
-                    // 今日表頭：加上頂部與左右邊線，去除底線向下延伸
-                    headerHTML += `<th class="px-1 sm:px-2 py-2 text-center w-[55px] sm:w-[65px] min-w-[55px] sm:min-w-[65px] max-w-[65px] text-amber-900 bg-amber-100 font-bold leading-tight border-t-2 border-x-2 border-b-0 border-amber-400 relative z-10">${dateLabel}</th>`;
+                    headerHTML += `<th class="px-1 sm:px-2 py-2 text-center w-[55px] sm:w-[65px] min-w-[55px] sm:min-w-[65px] max-w-[65px] text-amber-900 bg-amber-100 font-bold leading-tight border-t-2 border-x-2 border-b-0 border-amber-400 sticky top-0 z-30">${dateLabel}</th>`;
                 } else {
-                    headerHTML += `<th class="px-1 sm:px-2 py-2 text-center w-[55px] sm:w-[65px] min-w-[55px] sm:min-w-[65px] max-w-[65px] ${textClass} font-bold leading-tight border-b-2 border-slate-300">${dateLabel}</th>`;
+                    headerHTML += `<th class="px-1 sm:px-2 py-2 text-center w-[55px] sm:w-[65px] min-w-[55px] sm:min-w-[65px] max-w-[65px] ${textClass} bg-slate-100 font-bold leading-tight border-b-2 border-slate-300 sticky top-0 z-30">${dateLabel}</th>`;
                 }
             });
 
@@ -944,18 +1045,25 @@
                 const storeData = window.appState.schedules[storeId]?.[periodStr];
                 if (!storeData) return; 
                 
-                const shortName = getShortStoreName(STORE_LIST.find(s => s.id === storeId));
+                const currentStoreObj = STORE_LIST.find(s => s.id === storeId);
+                const shortName = getShortStoreName(currentStoreObj);
                 tablesRendered++;
                 const isLastStore = (storeIndex === selectedStores.length - 1);
 
-                // 門市名稱橫幅列：改為淺色底色，並使用深藍色文字作區隔，字體大小與姓名相同
+                // 將門市內的同仁進行排序：原門市同仁在上方，跨門市支援的同仁置於下方
+                const sortedStoreData = [...storeData].sort((a, b) => {
+                    const aSupport = isSupportStaff(a);
+                    const bSupport = isSupportStaff(b);
+                    if (aSupport === bSupport) return 0;
+                    return aSupport ? 1 : -1;
+                });
+
                 let storeRowHTML = `<td class="px-1 sm:px-2 py-2 font-bold text-brand-700 text-center sticky left-0 bg-slate-50 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-[13px] sm:text-sm border-b border-r border-slate-200">${shortName}</td>`;
                 
                 datesInRange.forEach(d => {
                     const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                     const isToday = dateStr === todayStr;
                     if (isToday) {
-                        // 今日的空白列：繼承黃色光柱，不畫橫線
                         storeRowHTML += `<td class="bg-amber-50/80 border-x-2 border-amber-400 border-y-0 p-0 relative z-10"></td>`;
                     } else {
                         storeRowHTML += `<td class="bg-slate-50/40 border-b border-slate-200 p-0"></td>`;
@@ -964,22 +1072,51 @@
                 
                 allRowsHTML += `<tr>${storeRowHTML}</tr>`;
 
-                storeData.forEach((emp, empIndex) => {
-                    // 判斷是否為整個表格的最後一位員工 (用來封底線)
-                    const isLastEmp = isLastStore && (empIndex === storeData.length - 1);
+                sortedStoreData.forEach((emp, empIndex) => {
+                    const isLastEmp = isLastStore && (empIndex === sortedStoreData.length - 1);
                     
-                    let cellsHTML = `<td class="px-1 sm:px-2 py-2 font-bold text-slate-800 text-center sticky left-0 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-[13px] sm:text-sm border-b border-r border-slate-100 group-hover/row:bg-slate-50 transition-colors">${emp.name}</td>`;
+                    // 支援同仁的名字使用較淺的文字顏色
+                    const isSupport = isSupportStaff(emp);
+                    const nameClasses = isSupport ? 'text-slate-400 font-medium' : 'text-slate-800 font-bold';
+
+                    let cellsHTML = `<td class="px-1 sm:px-2 py-2 ${nameClasses} text-center sticky left-0 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-[13px] sm:text-sm border-b border-r border-slate-100 group-hover/row:bg-slate-50 transition-colors">${emp.name}</td>`;
                     
                     datesInRange.forEach(d => {
                         const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                         const isToday = dateStr === todayStr;
-                        const code = emp.shifts[dateStr] || '';
+                        
+                        let code = emp.shifts[dateStr] || '';
+
+                        if (code) {
+                            let originalCode = code;
+
+                            if (code.includes('請假')) {
+                                code = '休';
+                            }
+                            if (code === '老人' || (code.includes('老人') && !code.includes('老人醫院'))) {
+                                code = code.replace('老人', '老人醫院');
+                            }
+                            code = code.replace(/^(星期)?[一ㄧ二三四五六日][\s\/\-、_]*/, '').trim();
+                            if (code === '鹿' || (code.includes('鹿') && !code.includes('鹿基'))) {
+                                code = code.replace('鹿', '鹿基');
+                            }
+
+                            if (originalCode && !code) {
+                                code = 'WORK';
+                            }
+
+                            if (code && code !== '休' && code !== 'WORK' && code !== 'OVERTIME' && !code.includes(':')) {
+                                if (isSelfStoreName(code, currentStoreObj)) {
+                                    code = 'WORK';
+                                }
+                            }
+                        }
+
                         let desc = SHIFT_LOGIC[code] || '';
                         
                         let bgClass = 'hover:bg-slate-100';
                         let displayContent = `<span class="text-slate-800 font-bold text-[11px] sm:text-xs truncate block w-full px-0.5">${code}</span>`;
                         
-                        // 外站判定
                         const isExternal = code && !SHIFT_LOGIC[code] && !STORE_LIST.some(s => s.name.includes(code) || getShortStoreName(s).includes(code)) && !code.includes(':') && code!=='WORK' && code!=='OVERTIME' && code!=='CROSS_IN' && code!=='CROSS_IN_OT' && code!=='休';
                         let tooltipDesc = isExternal ? `${code} 外站` : desc;
                         
@@ -1019,7 +1156,6 @@
                         }
                         
                         if (isToday) {
-                            // 統一光柱設計：只畫左右邊線，去除上下邊線 (除非是整個表格的最底端)
                             let bottomBorder = isLastEmp ? 'border-b-2 border-amber-400' : 'border-y-0';
                             cellsHTML += `
                                 <td class="px-0 py-2 text-center bg-amber-50/80 border-x-2 ${bottomBorder} border-amber-400 relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] z-10">
@@ -1058,12 +1194,11 @@
             if (tablesRendered === 0) {
                 emptyState.classList.remove('hidden');
             } else {
-                // 將 table 加入 border-separate 與 border-spacing-0 實現精準劃線控制
                 const finalTableHTML = `
                 <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden pb-px pr-px">
-                    <div class="overflow-x-auto relative">
+                    <div class="overflow-auto relative max-h-[calc(100vh-230px)] custom-scrollbar">
                         <table class="w-full text-sm text-left whitespace-nowrap table-fixed border-separate" style="border-spacing: 0;">
-                            <thead class="text-xs text-slate-700 bg-slate-100 uppercase">
+                            <thead class="text-xs text-slate-700 uppercase">
                                 <tr>${headerHTML}</tr>
                             </thead>
                             <tbody>
