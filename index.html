@@ -81,7 +81,7 @@
                 <h1 class="text-lg font-bold tracking-wider text-brand-800">中彰一區 班表總覽</h1>
             </div>
             <div class="flex items-center gap-3">
-                <span class="text-xs font-bold text-stone-400">v2.4</span>
+                <span class="text-xs font-bold text-stone-400">v2.5</span>
                 <button onclick="window.switchView('upload')" class="text-stone-400 hover:text-brand-700 focus:outline-none transition-colors p-2 rounded-full hover:bg-beige-100" title="系統設定">
                     <i class="fa-solid fa-gear text-xl"></i>
                 </button>
@@ -98,7 +98,6 @@
 
     <main class="flex-1 overflow-y-auto bg-beige p-3 sm:p-6 relative">
         
-        <!-- VIEW: Daily Overview -->
         <div id="view-daily" class="view-section max-w-7xl mx-auto space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-stone-200">
                 <div>
@@ -199,7 +198,7 @@
     </main>
 
     <!-- Edit Shift Modal -->
-    <div id="edit-modal" class="fixed inset-0 bg-stone-900/60 z-[60] hidden flex items-center justify-center p-4 transition-opacity">
+    <div id="edit-modal" class="fixed inset-0 bg-stone-900/60 z-[70] hidden flex items-center justify-center p-4 transition-opacity">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform transition-all relative">
             <div class="px-5 py-4 border-b border-stone-100 flex justify-between items-center bg-beige-50">
                 <h3 class="font-bold text-brand-800 text-lg">修改排班紀錄</h3>
@@ -277,7 +276,7 @@
         const SHIFT_LOGIC = {
             "A": "早班", "B": "中班", "C": "晚班", "D": "大夜班",
             "S03": "標準班(S03)", "W0001": "上班",
-            "M0002": "休假", "M0003": "休息日", "M0004": "例假日", "H": "休假", // 把 H 也預設為休假
+            "M0002": "休假", "M0003": "休息日", "M0004": "例假日", "H": "休假",
             "休": "休假", "OFF": "休假", "O": "休假",
             "事": "事假", "病": "病假", "特": "特休", "公": "公假", "喪": "喪假", "婚": "婚假", "產": "產假"
         };
@@ -286,6 +285,46 @@
         window.appState = { schedules: {} };
         let currentView = 'daily';
         let selectedStores = [];
+
+        // --- STREAMING_CHUNK:Touch & Click Detectors for Tooltip Logic ---
+        // 為了支援手機「第一次點擊顯示 tooltip，第二次點擊才編輯」所設計的通用偵測機制
+        window.isTouchDevice = false;
+        window.addEventListener('touchstart', () => { window.isTouchDevice = true; }, { passive: true });
+        window.addEventListener('mousemove', (e) => { 
+            // 確保如果是真實滑鼠移動，關閉觸控模式
+            if (e.movementX !== 0 || e.movementY !== 0) window.isTouchDevice = false; 
+        }, { passive: true });
+
+        document.addEventListener('click', (e) => {
+            // 如果點擊非班表儲存格的地方，自動收起所有的提示框
+            if (!e.target.closest('.schedule-cell')) {
+                document.querySelectorAll('.active-tooltip').forEach(node => {
+                    node.classList.remove('active-tooltip', '!z-[55]');
+                });
+            }
+        });
+
+        window.handleCellClick = function(el, storeId, period, empName, dateStr, code) {
+            if (window.isTouchDevice) {
+                // 如果是觸控設備：第一次 Tap 顯示 Tooltip，第二次 Tap 呼叫編輯 Modal
+                if (!el.classList.contains('active-tooltip')) {
+                    // 先清除其他展開的 tooltip
+                    document.querySelectorAll('.active-tooltip').forEach(node => {
+                        if (node !== el) node.classList.remove('active-tooltip', '!z-[55]');
+                    });
+                    // 將當前欄位設為活躍並拉高層級
+                    el.classList.add('active-tooltip', '!z-[55]');
+                    return; // 中斷，不開啟編輯視窗
+                }
+            }
+            
+            // 如果非觸控設備(已有hover效果) 或 觸控設備的第二次Tap：開啟編輯視窗
+            window.openEditModal(storeId, period, empName, dateStr, code);
+            
+            // 開啟後清除該 tooltip 的 active 狀態
+            el.classList.remove('active-tooltip', '!z-[55]');
+        };
+
 
         // --- Firebase Setup ---
         const appId = 'tc-schedule-app'; 
@@ -515,7 +554,6 @@
             // Show modal
             const modal = document.getElementById('edit-modal');
             modal.classList.remove('hidden');
-            // Small delay to allow CSS transition to apply
             setTimeout(() => modal.firstElementChild.classList.remove('scale-95', 'opacity-0'), 10);
         };
 
@@ -550,16 +588,14 @@
             }
         };
 
-        // Helper 處理跨門市同步
         async function syncCrossStore(empName, dateStr, periodStr, code, isAdd) {
             if (!code || (!code.startsWith('OUT:') && !code.startsWith('OT_OUT:'))) return;
             
             const isOT = code.startsWith('OT_OUT:');
             const shortName = code.split(':')[1];
-            // 嘗試模糊比對尋找目標門市
             const targetStore = STORE_LIST.find(s => getShortStoreName(s) === shortName || s.name.includes(shortName));
             
-            if (!targetStore) return; // 如果找不到該門市，就忽略不處理跨店同步
+            if (!targetStore) return; 
             
             const targetStoreId = targetStore.id;
             if (!window.appState.schedules[targetStoreId]) window.appState.schedules[targetStoreId] = {};
@@ -576,13 +612,11 @@
                 emp.shifts[dateStr] = isOT ? 'CROSS_IN_OT' : 'CROSS_IN';
             } else {
                 if (emp && emp.shifts[dateStr]) {
-                    // 只移除我們寫入的支援班次
                     if (emp.shifts[dateStr] === 'CROSS_IN' || emp.shifts[dateStr] === 'CROSS_IN_OT') {
                         delete emp.shifts[dateStr];
                     }
                 }
             }
-            // 儲存目標門市至雲端
             await saveStoreToCloud(targetStoreId);
         }
 
@@ -607,7 +641,6 @@
                     showToast('請輸入支援門市名稱', 'error');
                     return;
                 }
-                // 嘗試將使用者輸入自動校正為標準的門市簡稱
                 const targetStore = STORE_LIST.find(s => s.name.includes(loc) || getShortStoreName(s).includes(loc));
                 if (targetStore) loc = getShortStoreName(targetStore);
                 newCode = isOT ? `OT_OUT:${loc}` : `OUT:${loc}`;
@@ -622,26 +655,19 @@
             const storeData = window.appState.schedules[storeId]?.[periodStr];
             if (storeData) {
                 let emp = storeData.find(e => e.name === empName);
-                if (!emp) { // 防呆: 如果是沒紀錄的人（理論上不可能走到這裡），就幫他建一筆
+                if (!emp) { 
                     emp = { name: empName, shifts: {} };
                     storeData.push(emp);
                 }
 
-                // 1. 如果舊的是跨門市支援，把它從目標門市中移除
                 await syncCrossStore(empName, dateStr, periodStr, oldCode, false);
-                
-                // 2. 更新為新的狀態
                 emp.shifts[dateStr] = newCode;
-                
-                // 3. 如果新的是跨門市支援，自動把此人加到目標門市裡
                 await syncCrossStore(empName, dateStr, periodStr, newCode, true);
-                
-                // 4. 儲存當前門市的變動到雲端
                 await saveStoreToCloud(storeId);
                 
                 window.closeEditModal();
                 showToast(`已成功修改 ${empName} 的班別`);
-                refreshUI(); // 更新畫面
+                refreshUI(); 
             }
         };
 
@@ -1089,7 +1115,6 @@
                     let offHtml = '';
                     let workingCount = 0;
 
-                    // 排序：將跨門市支援人員放到底部
                     const sortedTargetStoreSchedule = [...targetStoreSchedule].sort((a, b) => {
                         const aSupport = isSupportStaff(a);
                         const bSupport = isSupportStaff(b);
@@ -1129,7 +1154,6 @@
                         const isOff = shiftCode === '休' || shiftCode.toUpperCase() === 'OFF' || shiftCode.includes('休') || logicDesc.includes('休');
                         let badgeHtml = '';
                         
-                        // 判定是否為支援人員，給予較淺的文字顏色
                         const isSupport = isSupportStaff(emp);
                         const nameClasses = isSupport ? 'text-stone-400 font-medium' : 'font-bold text-stone-700';
                         
@@ -1250,6 +1274,7 @@
             window.toggleStoreSelection();
         };
 
+        // --- STREAMING_CHUNK:Render Store Tables View ---
         window.renderStoreView = function() {
             const container = document.getElementById('store-tables-container');
             const emptyState = document.getElementById('store-empty-state');
@@ -1300,7 +1325,6 @@
                 tablesRendered++;
                 const isLastStore = (storeIndex === selectedStores.length - 1);
 
-                // 將門市內的同仁進行排序：原門市同仁在上方，跨門市支援的同仁置於下方
                 const sortedStoreData = [...storeData].sort((a, b) => {
                     const aSupport = isSupportStaff(a);
                     const bSupport = isSupportStaff(b);
@@ -1325,7 +1349,6 @@
                 sortedStoreData.forEach((emp, empIndex) => {
                     const isLastEmp = isLastStore && (empIndex === sortedStoreData.length - 1);
                     
-                    // 支援同仁的名字使用較淺的文字顏色
                     const isSupport = isSupportStaff(emp);
                     const nameClasses = isSupport ? 'text-stone-400 font-medium' : 'text-stone-800 font-bold';
 
@@ -1407,16 +1430,16 @@
                         
                         if (isToday) {
                             let bottomBorder = isLastEmp ? 'border-b-2 border-amber-500' : 'border-y-0';
+                            // 導入新的 handleCellClick 與 schedule-cell
                             cellsHTML += `
                                 <td data-store="${storeId}" data-period="${periodStr}" data-emp="${emp.name}" data-date="${dateStr}" data-code="${code}"
-                                    onclick="window.openEditModal(this.dataset.store, this.dataset.period, this.dataset.emp, this.dataset.date, this.dataset.code)"
-                                    tabindex="0" ontouchstart="" 
-                                    class="px-0 py-2 text-center bg-amber-50/80 border-x-2 ${bottomBorder} border-amber-500 relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] z-10 focus:outline-none">
+                                    onclick="window.handleCellClick(this, this.dataset.store, this.dataset.period, this.dataset.emp, this.dataset.date, this.dataset.code)"
+                                    tabindex="0"
+                                    class="schedule-cell px-0 py-2 text-center bg-amber-50/80 border-x-2 ${bottomBorder} border-amber-500 relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] z-10 focus:outline-none transition-colors">
                                     <div class="absolute inset-0 group-hover:bg-amber-100/50 group-focus:bg-amber-100/50 transition-colors z-0"></div>
                                     <div class="flex items-center justify-center w-full h-full overflow-hidden relative z-10">${displayContent}</div>
                                     ${code ? `
-                                    <!-- 只有在 hover 時顯示 tooltip，點擊會優先打開 modal，這是一種更好的平衡設計 -->
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden md:group-hover:block z-50">
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden sm:group-hover:block group-[.active-tooltip]:block z-[60]">
                                         <div class="bg-brand-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
                                             ${tooltipDesc}
                                             <svg class="absolute text-brand-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
@@ -1426,14 +1449,15 @@
                                 </td>
                             `;
                         } else {
+                            // 導入新的 handleCellClick 與 schedule-cell
                             cellsHTML += `
                                 <td data-store="${storeId}" data-period="${periodStr}" data-emp="${emp.name}" data-date="${dateStr}" data-code="${code}"
-                                    onclick="window.openEditModal(this.dataset.store, this.dataset.period, this.dataset.emp, this.dataset.date, this.dataset.code)"
-                                    tabindex="0" ontouchstart="" 
-                                    class="px-0 py-2 text-center border-b border-stone-100 ${bgClass} relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] focus:outline-none">
+                                    onclick="window.handleCellClick(this, this.dataset.store, this.dataset.period, this.dataset.emp, this.dataset.date, this.dataset.code)"
+                                    tabindex="0"
+                                    class="schedule-cell px-0 py-2 text-center border-b border-stone-100 ${bgClass} relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] focus:outline-none transition-colors">
                                     <div class="flex items-center justify-center w-full h-full overflow-hidden">${displayContent}</div>
                                     ${code ? `
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden md:group-hover:block z-50">
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden sm:group-hover:block group-[.active-tooltip]:block z-[60]">
                                         <div class="bg-brand-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
                                             ${tooltipDesc}
                                             <svg class="absolute text-brand-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
