@@ -81,7 +81,7 @@
                 <h1 class="text-lg font-bold tracking-wider text-brand-800">中彰一區 班表總覽</h1>
             </div>
             <div class="flex items-center gap-3">
-                <span class="text-xs font-bold text-stone-400">v2.2</span>
+                <span class="text-xs font-bold text-stone-400">v2.3</span>
                 <button onclick="window.switchView('upload')" class="text-stone-400 hover:text-brand-700 focus:outline-none transition-colors p-2 rounded-full hover:bg-beige-100" title="系統設定">
                     <i class="fa-solid fa-gear text-xl"></i>
                 </button>
@@ -1162,14 +1162,15 @@
                             displayContent = `<span class="text-sky-700 font-bold text-[10px] sm:text-xs truncate block px-0.5 w-full">${code}</span>`;
                         }
                         
+                        // ===== 修改重點區域：加入了 tabindex="0"、ontouchstart="" 以及 focus:outline-none =====
                         if (isToday) {
                             let bottomBorder = isLastEmp ? 'border-b-2 border-amber-500' : 'border-y-0';
                             cellsHTML += `
-                                <td class="px-0 py-2 text-center bg-amber-50/80 border-x-2 ${bottomBorder} border-amber-500 relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] z-10">
-                                    <div class="absolute inset-0 hover:bg-amber-100/50 transition-colors z-0"></div>
+                                <td tabindex="0" ontouchstart="" class="px-0 py-2 text-center bg-amber-50/80 border-x-2 ${bottomBorder} border-amber-500 relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] z-10 focus:outline-none">
+                                    <div class="absolute inset-0 group-hover:bg-amber-100/50 group-focus:bg-amber-100/50 transition-colors z-0"></div>
                                     <div class="flex items-center justify-center w-full h-full overflow-hidden relative z-10">${displayContent}</div>
                                     ${code ? `
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50">
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block group-focus:block z-50">
                                         <div class="bg-brand-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
                                             ${tooltipDesc}
                                             <svg class="absolute text-brand-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
@@ -1180,10 +1181,10 @@
                             `;
                         } else {
                             cellsHTML += `
-                                <td class="px-0 py-2 text-center border-b border-stone-100 ${bgClass} relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px]">
+                                <td tabindex="0" ontouchstart="" class="px-0 py-2 text-center border-b border-stone-100 ${bgClass} relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] focus:outline-none">
                                     <div class="flex items-center justify-center w-full h-full overflow-hidden">${displayContent}</div>
                                     ${code ? `
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50">
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block group-focus:block z-50">
                                         <div class="bg-brand-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
                                             ${tooltipDesc}
                                             <svg class="absolute text-brand-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
