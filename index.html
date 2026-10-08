@@ -81,7 +81,7 @@
                 <h1 class="text-lg font-bold tracking-wider text-brand-800">中彰一區 班表總覽</h1>
             </div>
             <div class="flex items-center gap-3">
-                <span class="text-xs font-bold text-stone-400">v2.3</span>
+                <span class="text-xs font-bold text-stone-400">v2.4 Edit</span>
                 <button onclick="window.switchView('upload')" class="text-stone-400 hover:text-brand-700 focus:outline-none transition-colors p-2 rounded-full hover:bg-beige-100" title="系統設定">
                     <i class="fa-solid fa-gear text-xl"></i>
                 </button>
@@ -198,8 +198,60 @@
 
     </main>
 
+    <!-- Edit Shift Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-stone-900/60 z-[60] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform transition-all relative">
+            <div class="px-5 py-4 border-b border-stone-100 flex justify-between items-center bg-beige-50">
+                <h3 class="font-bold text-brand-800 text-lg">修改排班紀錄</h3>
+                <button onclick="window.closeEditModal()" class="text-stone-400 hover:text-stone-600 focus:outline-none p-1 rounded-full hover:bg-stone-200 transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div class="flex justify-between items-center mb-1">
+                    <div class="text-sm font-bold text-stone-500 bg-stone-100 px-3 py-1 rounded-full" id="edit-modal-date">10/06 (一)</div>
+                    <div class="text-base font-bold text-brand-700 tracking-wide" id="edit-modal-emp">王大明</div>
+                </div>
+
+                <!-- Shift Type -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-stone-700">班別類型</label>
+                    <select id="edit-shift-type" class="w-full border border-stone-300 bg-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none text-stone-700 font-medium shadow-sm" onchange="window.handleEditTypeChange()">
+                        <option value="WORK">原門市上班</option>
+                        <option value="OUTSTATION">醫院/活動 外站</option>
+                        <option value="SUPPORT">門市 支援</option>
+                        <option value="OFF">休假</option>
+                    </select>
+                </div>
+
+                <!-- Overtime Checkbox -->
+                <div id="edit-ot-container" class="flex items-center mt-3 bg-stone-50 p-3 rounded-xl border border-stone-100">
+                    <input type="checkbox" id="edit-is-ot" class="w-4 h-4 text-brand-600 border-stone-300 rounded focus:ring-brand-500 cursor-pointer">
+                    <label for="edit-is-ot" class="ml-3 text-sm font-bold text-stone-700 cursor-pointer select-none">此班別為加班</label>
+                </div>
+
+                <!-- Location Input -->
+                <div id="edit-location-container" class="space-y-2 hidden pt-1">
+                    <label class="block text-sm font-bold text-stone-700" id="edit-location-label">地點</label>
+                    <input type="text" id="edit-location" placeholder="請輸入地點 (如: 老人醫院, 大里)" class="w-full border border-stone-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none shadow-sm placeholder:text-stone-300 font-medium">
+                </div>
+
+                <!-- Hidden inputs for context -->
+                <input type="hidden" id="edit-store-id">
+                <input type="hidden" id="edit-period">
+                <input type="hidden" id="edit-date">
+                <input type="hidden" id="edit-emp">
+                <input type="hidden" id="edit-old-code">
+            </div>
+            <div class="px-5 py-4 bg-stone-50 border-t border-stone-100 flex justify-end gap-3">
+                <button onclick="window.closeEditModal()" class="px-5 py-2.5 text-sm font-bold text-stone-600 bg-white border border-stone-300 rounded-xl hover:bg-stone-50 transition-colors shadow-sm">取消</button>
+                <button onclick="window.saveEditModal()" class="px-5 py-2.5 text-sm font-bold text-white bg-brand-600 rounded-xl hover:bg-brand-700 transition-colors shadow-sm">儲存修改</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+    <div id="toast-container" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
     <script type="module">
         // --- Firebase Imports ---
@@ -225,7 +277,7 @@
         const SHIFT_LOGIC = {
             "A": "早班", "B": "中班", "C": "晚班", "D": "大夜班",
             "S03": "標準班(S03)", "W0001": "上班",
-            "M0002": "休假", "M0003": "休息日", "M0004": "例假日", "H": "休假",
+            "M0002": "休假", "M0003": "休息日", "M0004": "例假日", "H": "休假", // 把 H 也預設為休假
             "休": "休假", "OFF": "休假", "O": "休假",
             "事": "事假", "病": "病假", "特": "特休", "公": "公假", "喪": "喪假", "婚": "婚假", "產": "產假"
         };
@@ -400,6 +452,197 @@
                 toast.classList.add('translate-y-10', 'opacity-0');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        };
+
+        // --- STREAMING_CHUNK: Edit Shift Modal Logic ---
+        window.openEditModal = function(storeId, periodStr, empName, dateStr, code) {
+            document.getElementById('edit-store-id').value = storeId;
+            document.getElementById('edit-period').value = periodStr;
+            document.getElementById('edit-date').value = dateStr;
+            document.getElementById('edit-emp').value = empName;
+            document.getElementById('edit-old-code').value = code || '';
+            
+            const [y, m, d] = dateStr.split('-');
+            const dateObj = new Date(y, m-1, d);
+            const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+            document.getElementById('edit-modal-date').innerText = `${m}/${d} (${weekDays[dateObj.getDay()]})`;
+            document.getElementById('edit-modal-emp').innerText = empName;
+            
+            let type = 'WORK';
+            let isOT = false;
+            let loc = '';
+
+            code = code || '';
+            const upperCode = code.toUpperCase();
+
+            // 解析舊的 code 分類回表單
+            if (code === '休' || upperCode === 'OFF' || code.includes('休') || code === 'H') {
+                type = 'OFF';
+            } else if (code === 'WORK') {
+                type = 'WORK';
+                isOT = false;
+            } else if (code === 'OVERTIME') {
+                type = 'WORK';
+                isOT = true;
+            } else if (code.startsWith('OUT:')) {
+                type = 'SUPPORT';
+                loc = code.split(':')[1];
+                isOT = false;
+            } else if (code.startsWith('OT_OUT:')) {
+                type = 'SUPPORT';
+                loc = code.split(':')[1];
+                isOT = true;
+            } else if (code === 'CROSS_IN') {
+                type = 'WORK';
+                isOT = false;
+            } else if (code === 'CROSS_IN_OT') {
+                type = 'WORK';
+                isOT = true;
+            } else if (code !== '') {
+                type = 'OUTSTATION';
+                isOT = code.includes('加班');
+                loc = code.replace(/\(?加班\)?/g, '').trim();
+            } else {
+                type = 'WORK';
+            }
+            
+            document.getElementById('edit-shift-type').value = type;
+            document.getElementById('edit-is-ot').checked = isOT;
+            document.getElementById('edit-location').value = loc;
+            
+            window.handleEditTypeChange();
+            
+            // Show modal
+            const modal = document.getElementById('edit-modal');
+            modal.classList.remove('hidden');
+            // Small delay to allow CSS transition to apply
+            setTimeout(() => modal.firstElementChild.classList.remove('scale-95', 'opacity-0'), 10);
+        };
+
+        window.closeEditModal = function() {
+            const modal = document.getElementById('edit-modal');
+            modal.classList.add('hidden');
+        };
+
+        window.handleEditTypeChange = function() {
+            const type = document.getElementById('edit-shift-type').value;
+            const otContainer = document.getElementById('edit-ot-container');
+            const locContainer = document.getElementById('edit-location-container');
+            const locLabel = document.getElementById('edit-location-label');
+            const locInput = document.getElementById('edit-location');
+            
+            if (type === 'OFF') {
+                otContainer.classList.add('hidden');
+                locContainer.classList.add('hidden');
+            } else if (type === 'WORK') {
+                otContainer.classList.remove('hidden');
+                locContainer.classList.add('hidden');
+            } else if (type === 'SUPPORT') {
+                otContainer.classList.remove('hidden');
+                locContainer.classList.remove('hidden');
+                locLabel.innerText = '支援門市';
+                locInput.placeholder = '請輸入門市 (如: 大里, 崇德)';
+            } else if (type === 'OUTSTATION') {
+                otContainer.classList.remove('hidden');
+                locContainer.classList.remove('hidden');
+                locLabel.innerText = '外站地點/活動';
+                locInput.placeholder = '請輸入地點 (如: 老人醫院)';
+            }
+        };
+
+        // Helper 處理跨門市同步
+        async function syncCrossStore(empName, dateStr, periodStr, code, isAdd) {
+            if (!code || (!code.startsWith('OUT:') && !code.startsWith('OT_OUT:'))) return;
+            
+            const isOT = code.startsWith('OT_OUT:');
+            const shortName = code.split(':')[1];
+            // 嘗試模糊比對尋找目標門市
+            const targetStore = STORE_LIST.find(s => getShortStoreName(s) === shortName || s.name.includes(shortName));
+            
+            if (!targetStore) return; // 如果找不到該門市，就忽略不處理跨店同步
+            
+            const targetStoreId = targetStore.id;
+            if (!window.appState.schedules[targetStoreId]) window.appState.schedules[targetStoreId] = {};
+            if (!window.appState.schedules[targetStoreId][periodStr]) window.appState.schedules[targetStoreId][periodStr] = [];
+            
+            const existing = window.appState.schedules[targetStoreId][periodStr];
+            let emp = existing.find(e => e.name === empName);
+            
+            if (isAdd) {
+                if (!emp) {
+                    emp = { name: empName, shifts: {} };
+                    existing.push(emp);
+                }
+                emp.shifts[dateStr] = isOT ? 'CROSS_IN_OT' : 'CROSS_IN';
+            } else {
+                if (emp && emp.shifts[dateStr]) {
+                    // 只移除我們寫入的支援班次
+                    if (emp.shifts[dateStr] === 'CROSS_IN' || emp.shifts[dateStr] === 'CROSS_IN_OT') {
+                        delete emp.shifts[dateStr];
+                    }
+                }
+            }
+            // 儲存目標門市至雲端
+            await saveStoreToCloud(targetStoreId);
+        }
+
+        window.saveEditModal = async function() {
+            const storeId = document.getElementById('edit-store-id').value;
+            const periodStr = document.getElementById('edit-period').value;
+            const dateStr = document.getElementById('edit-date').value;
+            const empName = document.getElementById('edit-emp').value;
+            const oldCode = document.getElementById('edit-old-code').value;
+            
+            const type = document.getElementById('edit-shift-type').value;
+            const isOT = document.getElementById('edit-is-ot').checked;
+            let loc = document.getElementById('edit-location').value.trim();
+            
+            let newCode = '';
+            if (type === 'OFF') {
+                newCode = '休';
+            } else if (type === 'WORK') {
+                newCode = isOT ? 'OVERTIME' : 'WORK';
+            } else if (type === 'SUPPORT') {
+                if (!loc) {
+                    showToast('請輸入支援門市名稱', 'error');
+                    return;
+                }
+                // 嘗試將使用者輸入自動校正為標準的門市簡稱
+                const targetStore = STORE_LIST.find(s => s.name.includes(loc) || getShortStoreName(s).includes(loc));
+                if (targetStore) loc = getShortStoreName(targetStore);
+                newCode = isOT ? `OT_OUT:${loc}` : `OUT:${loc}`;
+            } else if (type === 'OUTSTATION') {
+                if (!loc) {
+                    showToast('請輸入外站地點', 'error');
+                    return;
+                }
+                newCode = isOT ? `${loc}(加班)` : loc;
+            }
+            
+            const storeData = window.appState.schedules[storeId]?.[periodStr];
+            if (storeData) {
+                let emp = storeData.find(e => e.name === empName);
+                if (!emp) { // 防呆: 如果是沒紀錄的人（理論上不可能走到這裡），就幫他建一筆
+                    emp = { name: empName, shifts: {} };
+                    storeData.push(emp);
+                }
+
+                // 1. 如果舊的是跨門市支援，把它從目標門市中移除
+                await syncCrossStore(empName, dateStr, periodStr, oldCode, false);
+                
+                // 2. 更新為新的狀態
+                emp.shifts[dateStr] = newCode;
+                
+                // 3. 如果新的是跨門市支援，自動把此人加到目標門市裡
+                await syncCrossStore(empName, dateStr, periodStr, newCode, true);
+                
+                // 4. 儲存當前門市的變動到雲端
+                await saveStoreToCloud(storeId);
+                
+                window.closeEditModal();
+                showToast(`已成功修改 ${empName} 的班別`);
+                refreshUI(); // 更新畫面
+            }
         };
 
         // --- STREAMING_CHUNK:Parsing Engine Helpers ---
@@ -1162,15 +1405,18 @@
                             displayContent = `<span class="text-sky-700 font-bold text-[10px] sm:text-xs truncate block px-0.5 w-full">${code}</span>`;
                         }
                         
-                        // ===== 修改重點區域：加入了 tabindex="0"、ontouchstart="" 以及 focus:outline-none =====
                         if (isToday) {
                             let bottomBorder = isLastEmp ? 'border-b-2 border-amber-500' : 'border-y-0';
                             cellsHTML += `
-                                <td tabindex="0" ontouchstart="" class="px-0 py-2 text-center bg-amber-50/80 border-x-2 ${bottomBorder} border-amber-500 relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] z-10 focus:outline-none">
+                                <td data-store="${storeId}" data-period="${periodStr}" data-emp="${emp.name}" data-date="${dateStr}" data-code="${code}"
+                                    onclick="window.openEditModal(this.dataset.store, this.dataset.period, this.dataset.emp, this.dataset.date, this.dataset.code)"
+                                    tabindex="0" ontouchstart="" 
+                                    class="px-0 py-2 text-center bg-amber-50/80 border-x-2 ${bottomBorder} border-amber-500 relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] z-10 focus:outline-none">
                                     <div class="absolute inset-0 group-hover:bg-amber-100/50 group-focus:bg-amber-100/50 transition-colors z-0"></div>
                                     <div class="flex items-center justify-center w-full h-full overflow-hidden relative z-10">${displayContent}</div>
                                     ${code ? `
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block group-focus:block z-50">
+                                    <!-- 只有在 hover 時顯示 tooltip，點擊會優先打開 modal，這是一種更好的平衡設計 -->
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden md:group-hover:block z-50">
                                         <div class="bg-brand-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
                                             ${tooltipDesc}
                                             <svg class="absolute text-brand-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
@@ -1181,10 +1427,13 @@
                             `;
                         } else {
                             cellsHTML += `
-                                <td tabindex="0" ontouchstart="" class="px-0 py-2 text-center border-b border-stone-100 ${bgClass} relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] focus:outline-none">
+                                <td data-store="${storeId}" data-period="${periodStr}" data-emp="${emp.name}" data-date="${dateStr}" data-code="${code}"
+                                    onclick="window.openEditModal(this.dataset.store, this.dataset.period, this.dataset.emp, this.dataset.date, this.dataset.code)"
+                                    tabindex="0" ontouchstart="" 
+                                    class="px-0 py-2 text-center border-b border-stone-100 ${bgClass} relative group cursor-pointer w-[55px] sm:w-[65px] max-w-[65px] focus:outline-none">
                                     <div class="flex items-center justify-center w-full h-full overflow-hidden">${displayContent}</div>
                                     ${code ? `
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block group-focus:block z-50">
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden md:group-hover:block z-50">
                                         <div class="bg-brand-800 text-white text-[11px] sm:text-xs rounded py-1 px-2.5 whitespace-nowrap shadow-lg relative font-medium">
                                             ${tooltipDesc}
                                             <svg class="absolute text-brand-800 h-1.5 sm:h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255" xml:space="preserve"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
