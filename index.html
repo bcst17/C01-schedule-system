@@ -80,9 +80,12 @@
             <div class="flex items-center">
                 <h1 class="text-lg font-bold tracking-wider text-brand-800">中彰一區 排班系統</h1>
             </div>
-            <button onclick="window.switchView('upload')" class="text-stone-400 hover:text-brand-700 focus:outline-none transition-colors p-2 rounded-full hover:bg-beige-100" title="系統設定">
-                <i class="fa-solid fa-gear text-xl"></i>
-            </button>
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-bold text-stone-400">v2.1</span>
+                <button onclick="window.switchView('upload')" class="text-stone-400 hover:text-brand-700 focus:outline-none transition-colors p-2 rounded-full hover:bg-beige-100" title="系統設定">
+                    <i class="fa-solid fa-gear text-xl"></i>
+                </button>
+            </div>
         </div>
         <!-- Tabs (Button Style) -->
         <div class="flex px-4 sm:px-6 py-2.5 max-w-7xl mx-auto border-t border-stone-100 bg-white">
@@ -909,7 +912,7 @@
                                     const storeName = shiftCode.split(':')[1];
                                     badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></div><span class="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 font-bold">${storeName}</span></div>`;
                                 } else {
-                                    badgeHtml = `<span class="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100 truncate max-w-[80px] font-bold">${shiftCode}</span>`;
+                                    badgeHtml = `<span class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 truncate max-w-[80px] font-bold">${shiftCode}</span>`;
                                 }
 
                                 workingHtml += `
@@ -1155,8 +1158,8 @@
                             displayContent = `<span class="text-emerald-700 font-bold text-[11px] sm:text-xs truncate block px-0.5 w-full">${target}</span>`;
                             tooltipDesc = `${target} 支援`;
                         } else if (code) {
-                            bgClass = 'bg-purple-50 hover:bg-purple-100 transition-colors';
-                            displayContent = `<span class="text-purple-700 font-bold text-[10px] sm:text-xs truncate block px-0.5 w-full">${code}</span>`;
+                            bgClass = 'bg-blue-50 hover:bg-blue-100 transition-colors';
+                            displayContent = `<span class="text-blue-700 font-bold text-[10px] sm:text-xs truncate block px-0.5 w-full">${code}</span>`;
                         }
                         
                         if (isToday) {
