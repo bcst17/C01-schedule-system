@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>中彰一區 班表查詢系統</title>
+    <title>中彰一區 班表總覽</title>
     <!-- Web App / 加入主畫面設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="排班系統">
+    <meta name="apple-mobile-web-app-title" content="門市班表">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="manifest" href="manifest.json">
@@ -78,10 +78,10 @@
     <header class="bg-white border-b border-stone-200 shadow-sm z-20 flex-none">
         <div class="flex items-center justify-between px-4 sm:px-6 h-14 max-w-7xl mx-auto">
             <div class="flex items-center">
-                <h1 class="text-lg font-bold tracking-wider text-brand-800">中彰一區 排班系統</h1>
+                <h1 class="text-lg font-bold tracking-wider text-brand-800">中彰一區 班表總覽</h1>
             </div>
             <div class="flex items-center gap-3">
-                <span class="text-xs font-bold text-stone-400">v2.1</span>
+                <span class="text-xs font-bold text-stone-400">v2.2</span>
                 <button onclick="window.switchView('upload')" class="text-stone-400 hover:text-brand-700 focus:outline-none transition-colors p-2 rounded-full hover:bg-beige-100" title="系統設定">
                     <i class="fa-solid fa-gear text-xl"></i>
                 </button>
@@ -102,7 +102,7 @@
         <div id="view-daily" class="view-section max-w-7xl mx-auto space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-stone-200">
                 <div>
-                    <h2 class="text-xl font-bold text-brand-800">每日值班總覽</h2>
+                    <h2 class="text-xl font-bold text-brand-800">每日總覽</h2>
                 </div>
                 <div class="flex items-center gap-2">
                     <label for="daily-date" class="text-sm font-bold text-brand-800 shrink-0">選擇日期</label>
@@ -120,7 +120,7 @@
             <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-stone-200 flex flex-col gap-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
                     <div>
-                        <h2 class="text-xl font-bold text-brand-800">門市區間班表</h2>
+                        <h2 class="text-xl font-bold text-brand-800">門市班表</h2>
                     </div>
                     <div class="flex items-center">
                         <select id="store-month-view" class="border border-stone-300 bg-beige rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-64 font-medium text-stone-700" onchange="window.renderStoreView()">
@@ -178,7 +178,7 @@
 
             <!-- Database Status -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                <h3 class="text-md font-bold text-brand-800 mb-4">雲端資料狀態</h3>
+                <h3 class="text-md font-bold text-brand-800 mb-4">資料上傳狀態</h3>
                 <div class="overflow-x-auto rounded-lg border border-stone-200">
                     <table class="w-full text-sm text-left" id="status-table">
                         <thead class="text-xs text-stone-600 uppercase bg-beige-100 border-b border-stone-200">
@@ -900,19 +900,19 @@
                                 if (shiftCode === 'WORK') {
                                     badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-brand-500 shadow-sm"></div><span class="text-xs bg-brand-50 text-brand-700 px-1.5 py-0.5 rounded font-bold">上班</span></div>`;
                                 } else if (shiftCode === 'OVERTIME') {
-                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded border border-orange-100 font-bold">加班</span></div>`;
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm"></div><span class="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100/50 font-bold">加班</span></div>`;
                                 } else if (shiftCode === 'CROSS_IN') {
-                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></div><span class="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 font-bold">支援</span></div>`;
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-teal-500 shadow-sm"></div><span class="text-xs bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-100/50 font-bold">支援</span></div>`;
                                 } else if (shiftCode === 'CROSS_IN_OT') {
-                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded border border-orange-100 font-bold">支援(加班)</span></div>`;
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm"></div><span class="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100/50 font-bold">支援(加班)</span></div>`;
                                 } else if (shiftCode.startsWith('OT_OUT:')) {
                                     const storeName = shiftCode.split(':')[1];
-                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div><span class="text-xs bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded border border-orange-100 font-bold">${storeName}</span></div>`;
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm"></div><span class="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100/50 font-bold">${storeName}</span></div>`;
                                 } else if (shiftCode.startsWith('OUT:')) {
                                     const storeName = shiftCode.split(':')[1];
-                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></div><span class="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 font-bold">${storeName}</span></div>`;
+                                    badgeHtml = `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-teal-500 shadow-sm"></div><span class="text-xs bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-100/50 font-bold">${storeName}</span></div>`;
                                 } else {
-                                    badgeHtml = `<span class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 truncate max-w-[80px] font-bold">${shiftCode}</span>`;
+                                    badgeHtml = `<span class="text-xs bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded border border-sky-100/50 truncate max-w-[80px] font-bold">${shiftCode}</span>`;
                                 }
 
                                 workingHtml += `
@@ -1125,7 +1125,7 @@
                         let displayContent = `<span class="text-stone-800 font-bold text-[11px] sm:text-xs truncate block w-full px-0.5">${code}</span>`;
                         
                         const isExternal = code && !SHIFT_LOGIC[code] && !STORE_LIST.some(s => s.name.includes(code) || getShortStoreName(s).includes(code)) && !code.includes(':') && code!=='WORK' && code!=='OVERTIME' && code!=='CROSS_IN' && code!=='CROSS_IN_OT' && code!=='休';
-                        let tooltipDesc = isExternal ? `${code} 外站` : desc;
+                        let tooltipDesc = isExternal ? `${code}` : desc;
                         
                         if (code === '休' || code.toUpperCase() === 'OFF' || code.includes('休')) {
                             bgClass = 'bg-stone-50 text-stone-400 font-normal';
@@ -1133,33 +1133,33 @@
                             tooltipDesc = '休假';
                         } else if (code === 'WORK') {
                             bgClass = 'hover:bg-stone-200 transition-colors';
-                            displayContent = '<div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-brand-500 mx-auto shadow-sm"></div>';
+                            displayContent = '<div class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-brand-500 mx-auto shadow-sm"></div>';
                             tooltipDesc = '上班';
                         } else if (code === 'OVERTIME') {
-                            bgClass = 'bg-orange-50 hover:bg-orange-100 transition-colors';
-                            displayContent = '<div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-orange-500 mx-auto shadow-sm"></div>';
+                            bgClass = 'bg-amber-50/80 hover:bg-amber-100 transition-colors';
+                            displayContent = '<div class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-amber-500 mx-auto shadow-sm"></div>';
                             tooltipDesc = '加班';
                         } else if (code === 'CROSS_IN') {
-                            bgClass = 'bg-emerald-50 hover:bg-emerald-100 transition-colors';
-                            displayContent = '<div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-emerald-500 mx-auto shadow-sm"></div>';
+                            bgClass = 'bg-teal-50/80 hover:bg-teal-100 transition-colors';
+                            displayContent = '<div class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-teal-500 mx-auto shadow-sm"></div>';
                             tooltipDesc = '支援';
                         } else if (code === 'CROSS_IN_OT') {
-                            bgClass = 'bg-orange-50 hover:bg-orange-100 transition-colors';
-                            displayContent = '<div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-orange-500 mx-auto shadow-sm"></div>';
+                            bgClass = 'bg-amber-50/80 hover:bg-amber-100 transition-colors';
+                            displayContent = '<div class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-amber-500 mx-auto shadow-sm"></div>';
                             tooltipDesc = '支援(加班)';
                         } else if (code.startsWith('OT_OUT:')) {
                             const target = code.split(':')[1];
-                            bgClass = 'bg-orange-50 hover:bg-orange-100 transition-colors';
-                            displayContent = `<span class="text-orange-600 font-bold text-[11px] sm:text-xs truncate block px-0.5 w-full">${target}</span>`;
+                            bgClass = 'bg-amber-50/80 hover:bg-amber-100 transition-colors';
+                            displayContent = `<span class="text-amber-700 font-bold text-[11px] sm:text-xs truncate block px-0.5 w-full">${target}</span>`;
                             tooltipDesc = `${target} 支援(加班)`;
                         } else if (code.startsWith('OUT:')) {
                             const target = code.split(':')[1];
-                            bgClass = 'bg-emerald-50 hover:bg-emerald-100 transition-colors';
-                            displayContent = `<span class="text-emerald-700 font-bold text-[11px] sm:text-xs truncate block px-0.5 w-full">${target}</span>`;
+                            bgClass = 'bg-teal-50/80 hover:bg-teal-100 transition-colors';
+                            displayContent = `<span class="text-teal-700 font-bold text-[11px] sm:text-xs truncate block px-0.5 w-full">${target}</span>`;
                             tooltipDesc = `${target} 支援`;
                         } else if (code) {
-                            bgClass = 'bg-blue-50 hover:bg-blue-100 transition-colors';
-                            displayContent = `<span class="text-blue-700 font-bold text-[10px] sm:text-xs truncate block px-0.5 w-full">${code}</span>`;
+                            bgClass = 'bg-sky-50/80 hover:bg-sky-100 transition-colors';
+                            displayContent = `<span class="text-sky-700 font-bold text-[10px] sm:text-xs truncate block px-0.5 w-full">${code}</span>`;
                         }
                         
                         if (isToday) {
