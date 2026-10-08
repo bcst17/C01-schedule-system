@@ -225,7 +225,7 @@
         const SHIFT_LOGIC = {
             "A": "早班", "B": "中班", "C": "晚班", "D": "大夜班",
             "S03": "標準班(S03)", "W0001": "上班",
-            "M0002": "休假", "M0003": "休息日", "M0004": "例假日", "H": "國定假日",
+            "M0002": "休假", "M0003": "休息日", "M0004": "例假日", "H": "休假",
             "休": "休假", "OFF": "休假", "O": "休假",
             "事": "事假", "病": "病假", "特": "特休", "公": "公假", "喪": "喪假", "婚": "婚假", "產": "產假"
         };
@@ -437,7 +437,7 @@
                 if (!code) continue;
                 if (code === 'CROSS_IN' || code === 'CROSS_IN_OT') {
                     hasCross = true;
-                } else if (code !== '休' && !code.includes('休') && !code.includes('請假') && code !== 'OFF' && code !== 'O') {
+                } else if (code !== '休' && !code.includes('休') && !code.includes('請假') && code !== 'OFF' && code !== 'O' && code !== 'H') {
                     hasNative = true;
                 }
             }
@@ -629,12 +629,12 @@
                                 }
 
                                 if (!finalCode) {
-                                    if (['M0002', 'M0003', 'M0004', '休假', '休息日', '例假日'].includes(status)) finalCode = '休';
+                                    if (['M0002', 'M0003', 'M0004', 'H', '休假', '休息日', '例假日'].includes(status)) finalCode = '休';
                                     else if (status === 'W0001') finalCode = 'WORK';
                                     else finalCode = status;
                                 }
 
-                                if (finalCode.includes('請假') || ['M0002', 'M0003', 'M0004', '休假', '休息日', '例假日', '休', 'OFF', 'O'].includes(finalCode)) {
+                                if (finalCode.includes('請假') || ['M0002', 'M0003', 'M0004', 'H', '休假', '休息日', '例假日', '休', 'OFF', 'O'].includes(finalCode)) {
                                     finalCode = '休'; 
                                 }
 
@@ -733,7 +733,7 @@
                                                 finalCode = 'OVERTIME';
                                             } else if (code.toUpperCase().startsWith('S') || code === 'W0001') {
                                                 finalCode = 'WORK';
-                                            } else if (code.includes('請假') || ['M0002', 'M0003', 'M0004', '休假', '休息日', '例假日', '休', 'OFF', 'O'].includes(code)) {
+                                            } else if (code.includes('請假') || ['M0002', 'M0003', 'M0004', 'H', '休假', '休息日', '例假日', '休', 'OFF', 'O'].includes(code)) {
                                                 finalCode = '休'; 
                                             }
                                             
@@ -860,7 +860,7 @@
                         if (shiftCode) {
                             let originalShift = shiftCode;
 
-                            if (shiftCode.includes('請假')) {
+                            if (shiftCode.includes('請假') || shiftCode === 'H') {
                                 shiftCode = '休';
                             }
                             if (shiftCode === '老人' || (shiftCode.includes('老人') && !shiftCode.includes('老人醫院'))) {
@@ -1097,7 +1097,7 @@
                         if (code) {
                             let originalCode = code;
 
-                            if (code.includes('請假')) {
+                            if (code.includes('請假') || code === 'H') {
                                 code = '休';
                             }
                             if (code === '老人' || (code.includes('老人') && !code.includes('老人醫院'))) {
